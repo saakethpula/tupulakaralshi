@@ -23,6 +23,11 @@ enum PositionSide {
   NO
 }
 
+enum PositionStatus {
+  PENDING
+  CONFIRMED
+}
+
 model User {
   id             String          @id @default(cuid())
   auth0UserId    String          @unique
@@ -52,6 +57,7 @@ model GroupMembership {
   userId    String
   groupId   String
   role      GroupRole   @default(MEMBER)
+  balance   Int         @default(0)
   createdAt DateTime    @default(now())
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   group     FamilyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -80,14 +86,16 @@ model Market {
 }
 
 model Position {
-  id        String       @id @default(cuid())
-  marketId  String
-  userId    String
-  side      PositionSide
-  amount    Int
-  createdAt DateTime     @default(now())
-  market    Market       @relation(fields: [marketId], references: [id], onDelete: Cascade)
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String         @id @default(cuid())
+  marketId    String
+  userId      String
+  side        PositionSide
+  status      PositionStatus @default(PENDING)
+  amount      Int
+  createdAt   DateTime       @default(now())
+  confirmedAt DateTime?
+  market      Market         @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([marketId])
   @@index([userId])

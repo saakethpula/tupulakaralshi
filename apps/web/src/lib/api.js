@@ -18,15 +18,21 @@ export function getCurrentUser(token) {
     return request("/api/me", token);
 }
 export function createGroup(token, name) {
+    return createGroupWithBalance(token, { name, startingBalance: 0 });
+}
+export function createGroupWithBalance(token, payload) {
     return request("/api/groups", token, {
         method: "POST",
-        body: JSON.stringify({ name })
+        body: JSON.stringify(payload)
     });
 }
 export function joinGroup(token, joinCode) {
+    return joinGroupWithBalance(token, { joinCode, startingBalance: 0 });
+}
+export function joinGroupWithBalance(token, payload) {
     return request("/api/groups/join", token, {
         method: "POST",
-        body: JSON.stringify({ joinCode })
+        body: JSON.stringify(payload)
     });
 }
 export function getMarkets(token, groupId) {
@@ -38,15 +44,36 @@ export function createMarket(token, payload) {
         body: JSON.stringify(payload)
     });
 }
-export function createPosition(token, marketId, payload) {
-    return request(`/api/markets/${marketId}/positions`, token, {
-        method: "POST",
+export function upsertPosition(token, marketId, payload) {
+    return request(`/api/markets/${marketId}/position`, token, {
+        method: "PUT",
         body: JSON.stringify(payload)
+    });
+}
+export function deleteMarket(token, marketId) {
+    return request(`/api/markets/${marketId}`, token, {
+        method: "DELETE"
     });
 }
 export function resolveMarket(token, marketId, resolution) {
     return request(`/api/markets/${marketId}/resolve`, token, {
         method: "POST",
         body: JSON.stringify({ resolution })
+    });
+}
+export function confirmPosition(token, marketId, positionId) {
+    return request(`/api/markets/${marketId}/positions/${positionId}/confirm`, token, {
+        method: "POST"
+    });
+}
+export function rejectPosition(token, marketId, positionId) {
+    return request(`/api/markets/${marketId}/positions/${positionId}`, token, {
+        method: "DELETE"
+    });
+}
+export function addGroupBalance(token, groupId, amount) {
+    return request(`/api/groups/${groupId}/balance`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ amount })
     });
 }

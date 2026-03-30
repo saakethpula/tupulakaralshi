@@ -8,11 +8,17 @@ import { asyncHandler } from "../middleware/async-handler.js";
 export const groupsRouter = Router();
 
 const createGroupSchema = z.object({
-  name: z.string().min(2).max(80)
+  name: z.string().min(2).max(80),
+  startingBalance: z.coerce.number().int().min(0).max(100000)
 });
 
 const joinGroupSchema = z.object({
-  joinCode: z.string().min(6).max(12)
+  joinCode: z.string().min(6).max(12),
+  startingBalance: z.coerce.number().int().min(0).max(100000)
+});
+
+const updateBalanceSchema = z.object({
+  amount: z.coerce.number().int().min(1).max(100000)
 });
 
 groupsRouter.post("/", asyncHandler(async (req, res) => {
@@ -26,7 +32,8 @@ groupsRouter.post("/", asyncHandler(async (req, res) => {
       memberships: {
         create: {
           userId: currentUser.id,
-          role: GroupRole.ADMIN
+          role: GroupRole.ADMIN,
+          balance: input.startingBalance
         }
       }
     }
@@ -59,9 +66,40 @@ groupsRouter.post("/join", asyncHandler(async (req, res) => {
     update: {},
     create: {
       userId: currentUser.id,
-      groupId: group.id
+      groupId: group.id,
+      balance: input.startingBalance
     }
   });
 
   return res.json({ joined: true, groupId: group.id });
+}));
+
+groupsRouter.patch("/:groupId/balance", asyncHandler(async (req, res) => {
+  const currentUser = req.currentUser!;
+  const groupId = z.string().parse(req.params.groupId);
+  const input = updateBalanceSchema.parse(req.body);
+
+  const membership = await prisma.groupMembership.findUnique({
+    where: {
+      userId_groupId: {
+        userId: currentUser.id,
+        groupId
+      }
+    }
+  });
+
+  if (!membership) {
+    return res.status(403).json({ message: "You are not part of this family group." });
+  }
+
+  const updatedMembership = await prisma.groupMembership.update({
+    where: { id: membership.id },
+    data: {
+      balance: {
+        increment: input.amount
+      }
+    }
+  });
+
+  return res.json({ balance: updatedMembership.balance });
 }));

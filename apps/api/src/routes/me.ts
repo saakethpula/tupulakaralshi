@@ -32,12 +32,14 @@ meRouter.get("/", asyncHandler(async (req, res) => {
       name: membership.group.name,
       joinCode: membership.group.joinCode,
       role: membership.role,
+      balance: membership.balance,
       members: membership.group.memberships.map((groupMembership) => ({
         id: groupMembership.user.id,
         displayName: groupMembership.user.displayName,
         email: groupMembership.user.email,
         avatarUrl: groupMembership.user.avatarUrl,
-        role: groupMembership.role
+        role: groupMembership.role,
+        balance: groupMembership.balance
       }))
     }))
   });

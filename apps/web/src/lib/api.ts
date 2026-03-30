@@ -3,12 +3,14 @@ export type FamilyGroup = {
   name: string;
   joinCode: string;
   role: "ADMIN" | "MEMBER";
+  balance: number;
   members: Array<{
     id: string;
     displayName: string;
     email: string;
     avatarUrl?: string | null;
     role: "ADMIN" | "MEMBER";
+    balance: number;
   }>;
 };
 
@@ -37,6 +39,7 @@ export type Market = {
   status: "OPEN" | "CLOSED" | "RESOLVED";
   resolution?: boolean | null;
   createdBy: {
+    id: string;
     displayName: string;
   };
   targetUser: {
@@ -47,7 +50,12 @@ export type Market = {
     id: string;
     userId: string;
     side: "YES" | "NO";
+    status: "PENDING" | "CONFIRMED";
     amount: number;
+    user?: {
+      id: string;
+      displayName: string;
+    };
   }>;
   summary: {
     yesVolume: number;
@@ -55,7 +63,36 @@ export type Market = {
     totalVolume: number;
     yesPrice: number;
     noPrice: number;
+    leadingSide: "YES" | "NO";
   };
+  userPosition: {
+    yesAmount: number;
+    noAmount: number;
+    totalAmount: number;
+  };
+  userPendingPosition: {
+    yesAmount: number;
+    noAmount: number;
+    totalAmount: number;
+  };
+  userPayout: number;
+  venmoRecipient: {
+    userId: string;
+    displayName: string;
+  };
+  creatorPayouts: Array<{
+    userId: string;
+    displayName: string;
+    amount: number;
+  }>;
+  pendingConfirmations: Array<{
+    positionId: string;
+    userId: string;
+    displayName: string;
+    side: "YES" | "NO";
+    amount: number;
+    createdAt: string;
+  }>;
 };
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -89,16 +126,30 @@ export function getCurrentUser(token: string) {
 }
 
 export function createGroup(token: string, name: string) {
+  return createGroupWithBalance(token, { name, startingBalance: 0 });
+}
+
+export function createGroupWithBalance(
+  token: string,
+  payload: { name: string; startingBalance: number }
+) {
   return request<CreatedGroupResponse>("/api/groups", token, {
     method: "POST",
-    body: JSON.stringify({ name })
+    body: JSON.stringify(payload)
   });
 }
 
 export function joinGroup(token: string, joinCode: string) {
+  return joinGroupWithBalance(token, { joinCode, startingBalance: 0 });
+}
+
+export function joinGroupWithBalance(
+  token: string,
+  payload: { joinCode: string; startingBalance: number }
+) {
   return request<{ joined: boolean; groupId: string }>("/api/groups/join", token, {
     method: "POST",
-    body: JSON.stringify({ joinCode })
+    body: JSON.stringify(payload)
   });
 }
 
@@ -123,14 +174,20 @@ export function createMarket(
   });
 }
 
-export function createPosition(
+export function upsertPosition(
   token: string,
   marketId: string,
   payload: { side: "YES" | "NO"; amount: number }
 ) {
-  return request(`/api/markets/${marketId}/positions`, token, {
-    method: "POST",
+  return request<Market>(`/api/markets/${marketId}/position`, token, {
+    method: "PUT",
     body: JSON.stringify(payload)
+  });
+}
+
+export function deleteMarket(token: string, marketId: string) {
+  return request<{ deleted: boolean }>(`/api/markets/${marketId}`, token, {
+    method: "DELETE"
   });
 }
 
@@ -142,5 +199,24 @@ export function resolveMarket(
   return request<Market>(`/api/markets/${marketId}/resolve`, token, {
     method: "POST",
     body: JSON.stringify({ resolution })
+  });
+}
+
+export function confirmPosition(token: string, marketId: string, positionId: string) {
+  return request<Market>(`/api/markets/${marketId}/positions/${positionId}/confirm`, token, {
+    method: "POST"
+  });
+}
+
+export function rejectPosition(token: string, marketId: string, positionId: string) {
+  return request<Market>(`/api/markets/${marketId}/positions/${positionId}`, token, {
+    method: "DELETE"
+  });
+}
+
+export function addGroupBalance(token: string, groupId: string, amount: number) {
+  return request<{ balance: number }>(`/api/groups/${groupId}/balance`, token, {
+    method: "PATCH",
+    body: JSON.stringify({ amount })
   });
 }
