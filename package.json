@@ -16,8 +16,5 @@
     "start": "npm --workspace apps/api run start",
     "prisma:generate": "npm --workspace apps/api run prisma:generate",
     "prisma:migrate": "npm --workspace apps/api run prisma:migrate"
-  },
-  "dependencies": {
-    "@esbuild/win32-x64": "^0.27.4"
   }
 }
