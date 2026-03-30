@@ -588,7 +588,7 @@ export default function App() {
             </article>
           ) : null}
 
-          <article className="panel">
+          {/* <article className="panel">
             <div className="panel-heading">
               <div>
                 <p className="kicker">Members</p>
@@ -606,7 +606,7 @@ export default function App() {
                 </div>
               ))}
             </div>
-          </article>
+          </article> */}
         </aside>
 
         <section className="main-stack">
