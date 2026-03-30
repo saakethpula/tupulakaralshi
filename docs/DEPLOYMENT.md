@@ -20,6 +20,14 @@ Set:
 - `FRONTEND_ORIGIN`
 - `PORT`
 
+`FRONTEND_ORIGIN` can be a comma-separated allowlist if you want the deployed API to accept both local development and production frontend origins.
+
+Example:
+
+```bash
+FRONTEND_ORIGIN="http://localhost:5173,https://family-prediction-market-web.saakethpula.workers.dev"
+```
+
 Build/start flow:
 
 ```bash
@@ -73,7 +81,7 @@ For Cloudflare Pages builds, set:
 ## Final production checklist
 
 1. Update Auth0 callback, logout, and web origin URLs to the deployed frontend URL.
-2. Set Render `FRONTEND_ORIGIN` to that same frontend URL.
+2. Set Render `FRONTEND_ORIGIN` to the deployed frontend URL, or to a comma-separated allowlist if you also want local development to hit the deployed API.
 3. Confirm CORS and login work.
 4. Test with two users in the same family group.
 5. Verify the target user does not receive hidden markets from `GET /api/markets`.

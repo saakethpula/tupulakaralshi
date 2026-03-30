@@ -23,9 +23,16 @@ export async function attachCurrentUser(
 ) {
   try {
     const claims = req.auth?.payload as AuthClaims | undefined;
+    const missingClaims = [
+      !claims?.sub ? "sub" : null,
+      !claims?.email ? "email" : null
+    ].filter(Boolean);
 
-    if (!claims?.sub || !claims.email) {
-      return res.status(401).json({ message: "Missing Auth0 claims." });
+    if (missingClaims.length > 0) {
+      return res.status(401).json({
+        message: `Missing Auth0 claims: ${missingClaims.join(", ")}.`,
+        hint: "Configure Auth0 to include the required claims in the access token for this API."
+      });
     }
 
     const user = await prisma.user.upsert({

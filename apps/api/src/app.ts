@@ -2,7 +2,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
-import { env } from "./config.js";
+import { allowedFrontendOrigins } from "./config.js";
 import { attachCurrentUser, requireAuth } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { groupsRouter } from "./routes/groups.js";
@@ -14,7 +14,14 @@ export const app = express();
 
 app.use(
   cors({
-    origin: env.FRONTEND_ORIGIN,
+    origin(origin, callback) {
+      if (!origin || allowedFrontendOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin ${origin} is not allowed by CORS.`));
+    },
     credentials: true
   })
 );

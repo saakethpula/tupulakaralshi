@@ -24,8 +24,14 @@ Copy `apps/api/.env.example` to `apps/api/.env` and fill in:
 - `AUTH0_DOMAIN`
 - `AUTH0_AUDIENCE`
 - `AUTH0_ISSUER_BASE_URL`
-- `FRONTEND_ORIGIN`
+- `FRONTEND_ORIGIN` as a comma-separated allowlist of frontend URLs
 - `PORT`
+
+Example:
+
+```bash
+FRONTEND_ORIGIN="http://localhost:5173,https://family-prediction-market-web.saakethpula.workers.dev"
+```
 
 ## 4. Configure the frontend
 
