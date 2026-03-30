@@ -34,6 +34,7 @@ model User {
   email          String          @unique
   displayName    String
   avatarUrl      String?
+  balance        Int             @default(0)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   memberships    GroupMembership[]
@@ -57,7 +58,6 @@ model GroupMembership {
   userId    String
   groupId   String
   role      GroupRole   @default(MEMBER)
-  balance   Int         @default(0)
   createdAt DateTime    @default(now())
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   group     FamilyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)

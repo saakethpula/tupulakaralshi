@@ -8,13 +8,11 @@ import { asyncHandler } from "../middleware/async-handler.js";
 export const groupsRouter = Router();
 
 const createGroupSchema = z.object({
-  name: z.string().min(2).max(80),
-  startingBalance: z.coerce.number().int().min(0).max(100000)
+  name: z.string().min(2).max(80)
 });
 
 const joinGroupSchema = z.object({
-  joinCode: z.string().min(6).max(12),
-  startingBalance: z.coerce.number().int().min(0).max(100000)
+  joinCode: z.string().min(6).max(12)
 });
 
 const updateBalanceSchema = z.object({
@@ -32,8 +30,7 @@ groupsRouter.post("/", asyncHandler(async (req, res) => {
       memberships: {
         create: {
           userId: currentUser.id,
-          role: GroupRole.ADMIN,
-          balance: input.startingBalance
+          role: GroupRole.ADMIN
         }
       }
     }
@@ -66,8 +63,7 @@ groupsRouter.post("/join", asyncHandler(async (req, res) => {
     update: {},
     create: {
       userId: currentUser.id,
-      groupId: group.id,
-      balance: input.startingBalance
+      groupId: group.id
     }
   });
 
@@ -92,8 +88,8 @@ groupsRouter.patch("/:groupId/balance", asyncHandler(async (req, res) => {
     return res.status(403).json({ message: "You are not part of this family group." });
   }
 
-  const updatedMembership = await prisma.groupMembership.update({
-    where: { id: membership.id },
+  const updatedUser = await prisma.user.update({
+    where: { id: currentUser.id },
     data: {
       balance: {
         increment: input.amount
@@ -101,5 +97,5 @@ groupsRouter.patch("/:groupId/balance", asyncHandler(async (req, res) => {
     }
   });
 
-  return res.json({ balance: updatedMembership.balance });
+  return res.json({ balance: updatedUser.balance });
 }));

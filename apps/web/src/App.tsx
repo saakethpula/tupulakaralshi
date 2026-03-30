@@ -54,9 +54,7 @@ export default function App() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [tradeDrafts, setTradeDrafts] = useState<Record<string, TradeDraft>>({});
   const [groupName, setGroupName] = useState("");
-  const [groupStartingBalance, setGroupStartingBalance] = useState("500");
   const [joinCode, setJoinCode] = useState("");
-  const [joinStartingBalance, setJoinStartingBalance] = useState("500");
   const [topUpAmount, setTopUpAmount] = useState("100");
   const [question, setQuestion] = useState("");
   const [description, setDescription] = useState("");
@@ -174,13 +172,12 @@ export default function App() {
     try {
       const group = await createGroupWithBalance(token, {
         name: groupName,
-        startingBalance: Number(groupStartingBalance)
+        startingBalance: 0
       });
       setSelectedGroupId(group.id);
       setGroupName("");
-      setGroupStartingBalance("500");
       await refreshWorkspace(token, group.id);
-      setStatusMessage(`Created ${group.name} with your opening bankroll.`);
+      setStatusMessage(`Created ${group.name}.`);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Failed to create group.");
     } finally {
@@ -196,13 +193,12 @@ export default function App() {
     try {
       const response = await joinGroupWithBalance(token, {
         joinCode,
-        startingBalance: Number(joinStartingBalance)
+        startingBalance: 0
       });
       setSelectedGroupId(response.groupId);
       setJoinCode("");
-      setJoinStartingBalance("500");
       await refreshWorkspace(token, response.groupId);
-      setStatusMessage("Joined the group and funded your starting balance.");
+      setStatusMessage("Joined the group.");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Failed to join group.");
     } finally {
@@ -223,7 +219,7 @@ export default function App() {
       await addGroupBalance(token, selectedGroupId, Number(topUpAmount));
       await refreshProfile(token);
       setTopUpAmount("100");
-      setStatusMessage("Balance updated.");
+      setStatusMessage("Your balance was updated.");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Failed to add balance.");
     } finally {
@@ -393,8 +389,8 @@ export default function App() {
         <div className="hero-meta">
           <div className="metric-panel">
             <span className="metric-label">Available balance</span>
-            <strong>{formatMoney(selectedGroup?.balance ?? 0)}</strong>
-            <small>{selectedGroup?.name ?? "Choose a family group"}</small>
+            <strong>{formatMoney(profile?.user.balance ?? 0)}</strong>
+            <small>Shared across every family group</small>
           </div>
           <div className="hero-controls">
             <button
@@ -446,7 +442,7 @@ export default function App() {
                   onClick={() => setSelectedGroupId(group.id)}
                 >
                   <span>{group.name}</span>
-                  <strong>{formatMoney(group.balance)}</strong>
+                  <strong>{group.role}</strong>
                   <small>{group.joinCode}</small>
                 </button>
               ))}
@@ -473,7 +469,7 @@ export default function App() {
               </div>
               <div className="settings-grid">
                 <form onSubmit={handleAddFunds} className="form-stack compact-form">
-                  <span className="subtle-copy">Add funds to the current group</span>
+                  <span className="subtle-copy">Add funds to your personal balance</span>
                   <input
                     type="number"
                     min="1"
@@ -487,7 +483,7 @@ export default function App() {
                     type="submit"
                     disabled={!selectedGroupId || busyAction === "top-up"}
                   >
-                    Add to balance
+                    Add to my balance
                   </button>
                 </form>
 
@@ -497,14 +493,6 @@ export default function App() {
                     value={groupName}
                     onChange={(event) => setGroupName(event.target.value)}
                     placeholder="The Parkers"
-                    required
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    value={groupStartingBalance}
-                    onChange={(event) => setGroupStartingBalance(event.target.value)}
-                    placeholder="Opening balance"
                     required
                   />
                   <button className="primary-button" type="submit" disabled={busyAction === "create-group"}>
@@ -518,14 +506,6 @@ export default function App() {
                     value={joinCode}
                     onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
                     placeholder="Join code"
-                    required
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    value={joinStartingBalance}
-                    onChange={(event) => setJoinStartingBalance(event.target.value)}
-                    placeholder="Opening balance"
                     required
                   />
                   <button className="ghost-button" type="submit" disabled={busyAction === "join-group"}>

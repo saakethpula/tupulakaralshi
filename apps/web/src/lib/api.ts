@@ -3,7 +3,6 @@ export type FamilyGroup = {
   name: string;
   joinCode: string;
   role: "ADMIN" | "MEMBER";
-  balance: number;
   members: Array<{
     id: string;
     displayName: string;
@@ -20,6 +19,7 @@ export type CurrentUserResponse = {
     email: string;
     displayName: string;
     avatarUrl?: string | null;
+    balance: number;
   };
   groups: FamilyGroup[];
 };
@@ -126,31 +126,31 @@ export function getCurrentUser(token: string) {
 }
 
 export function createGroup(token: string, name: string) {
-  return createGroupWithBalance(token, { name, startingBalance: 0 });
+  return request<CreatedGroupResponse>("/api/groups", token, {
+    method: "POST",
+    body: JSON.stringify({ name })
+  });
 }
 
 export function createGroupWithBalance(
   token: string,
   payload: { name: string; startingBalance: number }
 ) {
-  return request<CreatedGroupResponse>("/api/groups", token, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
+  return createGroup(token, payload.name);
 }
 
 export function joinGroup(token: string, joinCode: string) {
-  return joinGroupWithBalance(token, { joinCode, startingBalance: 0 });
+  return request<{ joined: boolean; groupId: string }>("/api/groups/join", token, {
+    method: "POST",
+    body: JSON.stringify({ joinCode })
+  });
 }
 
 export function joinGroupWithBalance(
   token: string,
   payload: { joinCode: string; startingBalance: number }
 ) {
-  return request<{ joined: boolean; groupId: string }>("/api/groups/join", token, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
+  return joinGroup(token, payload.joinCode);
 }
 
 export function getMarkets(token: string, groupId: string) {

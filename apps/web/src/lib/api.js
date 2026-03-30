@@ -18,22 +18,22 @@ export function getCurrentUser(token) {
     return request("/api/me", token);
 }
 export function createGroup(token, name) {
-    return createGroupWithBalance(token, { name, startingBalance: 0 });
-}
-export function createGroupWithBalance(token, payload) {
     return request("/api/groups", token, {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ name })
     });
+}
+export function createGroupWithBalance(token, payload) {
+    return createGroup(token, payload.name);
 }
 export function joinGroup(token, joinCode) {
-    return joinGroupWithBalance(token, { joinCode, startingBalance: 0 });
-}
-export function joinGroupWithBalance(token, payload) {
     return request("/api/groups/join", token, {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ joinCode })
     });
+}
+export function joinGroupWithBalance(token, payload) {
+    return joinGroup(token, payload.joinCode);
 }
 export function getMarkets(token, groupId) {
     return request(`/api/markets?groupId=${groupId}`, token);

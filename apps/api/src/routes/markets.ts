@@ -273,7 +273,7 @@ marketsRouter.put("/:marketId/position", asyncHandler(async (req, res) => {
   const currentPositionAmount = market.positions
     .filter((position) => position.userId === currentUser.id)
     .reduce((total, position) => total + position.amount, 0);
-  const spendableBalance = membership.balance + currentPositionAmount;
+  const spendableBalance = currentUser.balance + currentPositionAmount;
 
   if (input.amount > spendableBalance) {
     return res.status(400).json({
@@ -289,8 +289,8 @@ marketsRouter.put("/:marketId/position", asyncHandler(async (req, res) => {
       }
     });
 
-    await tx.groupMembership.update({
-      where: { id: membership.id },
+    await tx.user.update({
+      where: { id: currentUser.id },
       data: {
         balance: spendableBalance - input.amount
       }
@@ -436,13 +436,8 @@ marketsRouter.delete("/:marketId/positions/:positionId", asyncHandler(async (req
   }
 
   const updatedMarket = await prisma.$transaction(async (tx) => {
-    await tx.groupMembership.update({
-      where: {
-        userId_groupId: {
-          userId: position.userId,
-          groupId: market.groupId
-        }
-      },
+    await tx.user.update({
+      where: { id: position.userId },
       data: {
         balance: {
           increment: position.amount
@@ -521,13 +516,8 @@ marketsRouter.post("/:marketId/resolve", asyncHandler(async (req, res) => {
   const payouts = calculateResolutionPayouts(confirmedPositions, input.resolution);
   const updated = await prisma.$transaction(async (tx) => {
     for (const [userId, payout] of payouts.entries()) {
-      await tx.groupMembership.update({
-        where: {
-          userId_groupId: {
-            userId,
-            groupId: market.groupId
-          }
-        },
+      await tx.user.update({
+        where: { id: userId },
         data: {
           balance: {
             increment: payout
@@ -611,13 +601,8 @@ marketsRouter.delete("/:marketId", asyncHandler(async (req, res) => {
 
   await prisma.$transaction(async (tx) => {
     for (const [userId, amount] of refunds.entries()) {
-      await tx.groupMembership.update({
-        where: {
-          userId_groupId: {
-            userId,
-            groupId: market.groupId
-          }
-        },
+      await tx.user.update({
+        where: { id: userId },
         data: {
           balance: {
             increment: amount
