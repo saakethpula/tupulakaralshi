@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { calculateMarketSummary } from "../lib/market.js";
+import { asyncHandler } from "../middleware/async-handler.js";
 
 export const marketsRouter = Router();
 
@@ -24,7 +25,7 @@ const resolveMarketSchema = z.object({
   resolution: z.boolean()
 });
 
-marketsRouter.get("/", async (req, res) => {
+marketsRouter.get("/", asyncHandler(async (req, res) => {
   const currentUser = req.currentUser!;
   const groupId = z.string().parse(req.query.groupId);
 
@@ -64,9 +65,9 @@ marketsRouter.get("/", async (req, res) => {
       summary: calculateMarketSummary(market, market.positions)
     }))
   );
-});
+}));
 
-marketsRouter.post("/", async (req, res) => {
+marketsRouter.post("/", asyncHandler(async (req, res) => {
   const currentUser = req.currentUser!;
   const input = createMarketSchema.parse(req.body);
 
@@ -125,9 +126,9 @@ marketsRouter.post("/", async (req, res) => {
     ...market,
     summary: calculateMarketSummary(market, market.positions)
   });
-});
+}));
 
-marketsRouter.post("/:marketId/positions", async (req, res) => {
+marketsRouter.post("/:marketId/positions", asyncHandler(async (req, res) => {
   const currentUser = req.currentUser!;
   const marketId = z.string().parse(req.params.marketId);
   const input = createPositionSchema.parse(req.body);
@@ -173,9 +174,9 @@ marketsRouter.post("/:marketId/positions", async (req, res) => {
   });
 
   res.status(201).json(position);
-});
+}));
 
-marketsRouter.post("/:marketId/resolve", async (req, res) => {
+marketsRouter.post("/:marketId/resolve", asyncHandler(async (req, res) => {
   const currentUser = req.currentUser!;
   const marketId = z.string().parse(req.params.marketId);
   const input = resolveMarketSchema.parse(req.body);
@@ -230,4 +231,4 @@ marketsRouter.post("/:marketId/resolve", async (req, res) => {
     ...updated,
     summary: calculateMarketSummary(updated, updated.positions)
   });
-});
+}));

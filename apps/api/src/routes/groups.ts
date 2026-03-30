@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { createJoinCode } from "../lib/join-code.js";
+import { asyncHandler } from "../middleware/async-handler.js";
 
 export const groupsRouter = Router();
 
@@ -14,7 +15,7 @@ const joinGroupSchema = z.object({
   joinCode: z.string().min(6).max(12)
 });
 
-groupsRouter.post("/", async (req, res) => {
+groupsRouter.post("/", asyncHandler(async (req, res) => {
   const currentUser = req.currentUser!;
   const input = createGroupSchema.parse(req.body);
 
@@ -32,9 +33,9 @@ groupsRouter.post("/", async (req, res) => {
   });
 
   res.status(201).json(group);
-});
+}));
 
-groupsRouter.post("/join", async (req, res) => {
+groupsRouter.post("/join", asyncHandler(async (req, res) => {
   const currentUser = req.currentUser!;
   const input = joinGroupSchema.parse(req.body);
 
@@ -63,4 +64,4 @@ groupsRouter.post("/join", async (req, res) => {
   });
 
   return res.json({ joined: true, groupId: group.id });
-});
+}));

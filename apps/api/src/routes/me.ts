@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
+import { asyncHandler } from "../middleware/async-handler.js";
 
 export const meRouter = Router();
 
-meRouter.get("/", async (req, res) => {
+meRouter.get("/", asyncHandler(async (req, res) => {
   const currentUser = req.currentUser!;
 
   const memberships = await prisma.groupMembership.findMany({
@@ -40,4 +41,4 @@ meRouter.get("/", async (req, res) => {
       }))
     }))
   });
-});
+}));
