@@ -71,6 +71,8 @@ export default function App() {
   const [busyAction, setBusyAction] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [groupSetupMode, setGroupSetupMode] = useState<"join" | "create">("join");
 
   const selectedGroup = useMemo(
     () => profile?.groups.find((group) => group.id === selectedGroupId) ?? null,
@@ -86,6 +88,47 @@ export default function App() {
   const needsVenmoHandle = !profile?.user.venmoHandle;
   const needsFirstGroup = (profile?.groups.length ?? 0) === 0;
   const onboardingReady = !needsVenmoHandle && !needsFirstGroup;
+  const canOpenTutorialSlides = !needsVenmoHandle && !needsFirstGroup;
+
+  const tutorialSlides = [
+    {
+      title: "Pick the right group",
+      body:
+        "Every market belongs to one private family group. On the dashboard, switch groups from the left rail so you only see the markets and balances for that circle."
+    },
+    {
+      title: "Create a market",
+      body:
+        "Use the Launch a new thesis panel to choose who the market is about, write the question, add settlement notes, and choose when betting closes."
+    },
+    {
+      title: "Place your position",
+      body:
+        "Open a market, choose YES or NO, enter your stake, and submit. The app immediately tells you who should receive the Venmo payment for escrow."
+    },
+    {
+      title: "Wait for payment confirmation",
+      body:
+        "Your position stays pending until the market creator confirms they received the Venmo. Only then does the stake count toward the live market totals."
+    },
+    {
+      title: "Resolve and settle",
+      body:
+        "When the outcome is known, an admin resolves the market YES or NO. The app calculates payouts and tracks who still needs to confirm they sent money."
+    },
+    {
+      title: "Use settings anytime",
+      body:
+        "Later on, Settings lets you update Venmo, add funds, join another group, or create a fresh group without repeating this onboarding flow."
+    }
+  ] as const;
+
+  const totalOnboardingSteps = 3 + tutorialSlides.length;
+  const currentTutorialIndex = Math.max(0, onboardingStep - 3);
+  const isIntroSlide = onboardingStep === 0;
+  const isVenmoSlide = onboardingStep === 1;
+  const isGroupSlide = onboardingStep === 2;
+  const isTutorialSlide = onboardingStep >= 3;
 
   async function refreshProfile(accessToken: string) {
     const nextProfile = await getCurrentUser(accessToken);
@@ -177,6 +220,18 @@ export default function App() {
       setShowOnboarding(true);
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (onboardingStep === 1 && !needsVenmoHandle) {
+      setOnboardingStep(2);
+    }
+  }, [needsVenmoHandle, onboardingStep]);
+
+  useEffect(() => {
+    if (onboardingStep === 2 && !needsFirstGroup) {
+      setOnboardingStep(3);
+    }
+  }, [needsFirstGroup, onboardingStep]);
 
   function updateTradeDraft(marketId: string, patch: Partial<TradeDraft>) {
     setTradeDrafts((currentDrafts) => ({
@@ -461,20 +516,37 @@ export default function App() {
 
   if (showOnboarding) {
     const onboardingKey = `${ONBOARDING_STORAGE_PREFIX}${profile.user.id}`;
+    const progressCount = onboardingStep + 1;
+    const activeTutorialSlide = tutorialSlides[currentTutorialIndex];
 
     return (
       <main className="shell app-shell">
         <section className="onboarding-shell">
           <article className="onboarding-hero">
             <div className="hero-copy">
-              <p className="kicker">First steps</p>
-              <h1>Set up payouts, join a group, and learn the flow.</h1>
+              <p className="kicker onboarding-kicker">Interactive tutorial</p>
+              <h1>Walk through the app one screen at a time.</h1>
               <p className="hero-lede">
-                Before you start trading, we need two quick things: where people should pay you on Venmo and which group you belong to. Right after that, this page walks you through the site step by step.
+                This onboarding now works like a slideshow. First we set up payouts, then we get you into a group, then we walk through exactly how the market flow works before you land on the dashboard.
               </p>
             </div>
             <div className="onboarding-progress">
-              <div className={needsVenmoHandle ? "progress-card" : "progress-card complete"}>
+              <div className={onboardingStep === 0 ? "progress-card active" : "progress-card complete"}>
+                <span className="preview-label">Start</span>
+                <strong>Tutorial overview</strong>
+                <p>
+                  A clear first screen that explains what is about to happen before any setup fields appear.
+                </p>
+              </div>
+              <div
+                className={
+                  onboardingStep === 1
+                    ? "progress-card active"
+                    : needsVenmoHandle
+                      ? "progress-card"
+                      : "progress-card complete"
+                }
+              >
                 <span className="preview-label">Step 1</span>
                 <strong>{needsVenmoHandle ? "Add your Venmo" : "Venmo linked"}</strong>
                 <p>
@@ -483,21 +555,35 @@ export default function App() {
                     : `Payments can now be routed to @${profile.user.venmoHandle}.`}
                 </p>
               </div>
-              <div className={needsFirstGroup ? "progress-card" : "progress-card complete"}>
+              <div
+                className={
+                  onboardingStep === 2
+                    ? "progress-card active"
+                    : needsFirstGroup
+                      ? "progress-card"
+                      : "progress-card complete"
+                }
+              >
                 <span className="preview-label">Step 2</span>
-                <strong>{needsFirstGroup ? "Join your first group" : "Group connected"}</strong>
+                <strong>{needsFirstGroup ? "Join or create a group" : "Group connected"}</strong>
                 <p>
                   {needsFirstGroup
-                    ? "Use a join code from someone else or create the first group yourself."
+                    ? "Choose one path on a dedicated screen instead of juggling both forms at once."
                     : `You’re connected to ${profile.groups[0]?.name ?? "your first group"}.`}
                 </p>
               </div>
-              <div className={onboardingReady ? "progress-card complete" : "progress-card"}>
+              <div
+                className={
+                  isTutorialSlide
+                    ? "progress-card active"
+                    : canOpenTutorialSlides
+                      ? "progress-card complete"
+                      : "progress-card"
+                }
+              >
                 <span className="preview-label">Step 3</span>
-                <strong>{onboardingReady ? "Tutorial unlocked" : "Finish setup to continue"}</strong>
-                <p>
-                  Learn how to create markets, place positions, confirm payments, and resolve outcomes without guessing.
-                </p>
+                <strong>{canOpenTutorialSlides ? "Tutorial slides" : "Finish setup to unlock tutorial"}</strong>
+                <p>Learn how to create markets, place positions, confirm payments, and resolve outcomes without guessing.</p>
               </div>
             </div>
           </article>
@@ -508,146 +594,182 @@ export default function App() {
           </section>
 
           <section className="onboarding-grid">
-            <article className="panel onboarding-panel">
-              <div className="panel-heading">
+            <article className="panel onboarding-slide-panel">
+              <div className="panel-heading onboarding-slide-heading">
                 <div>
-                  <p className="kicker">Setup</p>
-                  <h2>Finish your account basics</h2>
+                  <p className="kicker">
+                    {isIntroSlide
+                      ? "Tutorial cover"
+                      : isVenmoSlide
+                        ? "Step 1 of 3"
+                        : isGroupSlide
+                          ? "Step 2 of 3"
+                          : `Tutorial slide ${currentTutorialIndex + 1} of ${tutorialSlides.length}`}
+                  </p>
+                  <h2>
+                    {isIntroSlide
+                      ? "Before you enter the dashboard"
+                      : isVenmoSlide
+                        ? "Add the Venmo handle people should pay"
+                        : isGroupSlide
+                          ? "Join a group or create your first one"
+                          : activeTutorialSlide.title}
+                  </h2>
                 </div>
-                <span className="subtle-copy">
-                  {onboardingReady ? "You’re ready for the dashboard." : "Complete both steps to continue."}
-                </span>
+                <span className="subtle-copy">Screen {progressCount} of {totalOnboardingSteps}</span>
               </div>
 
-              <div className="onboarding-forms">
-                <form onSubmit={handleSaveVenmoHandle} className="compact-form form-stack">
-                  <span className="subtle-copy">Where should people Venmo you?</span>
-                  <input
-                    value={venmoHandle}
-                    onChange={(event) => setVenmoHandle(event.target.value)}
-                    placeholder="@yourhandle"
-                    required
-                  />
-                  <button
-                    className="secondary-button"
-                    type="submit"
-                    disabled={busyAction === "venmo"}
-                  >
-                    {needsVenmoHandle ? "Save Venmo handle" : "Update Venmo handle"}
-                  </button>
-                </form>
+              {isIntroSlide ? (
+                <div className="slideshow-stage tutorial-cover">
+                  <div className="cover-badge">Interactive walkthrough</div>
+                  <p className="cover-title">We’ll set up your account, then show the product flow one step at a time.</p>
+                  <p className="cover-copy">
+                    You won’t have to scan a long wall of onboarding anymore. Each screen has one job, and the tutorial starts with this dedicated intro so it feels clearly separate from the actual app.
+                  </p>
+                  <div className="cover-highlights">
+                    <div className="cover-highlight">
+                      <strong>1. Save Venmo</strong>
+                      <p>Make sure everyone knows where to send money for funding and payouts.</p>
+                    </div>
+                    <div className="cover-highlight">
+                      <strong>2. Pick your group path</strong>
+                      <p>Use one full screen to either join an existing group or start a new one yourself.</p>
+                    </div>
+                    <div className="cover-highlight">
+                      <strong>3. Learn the flow</strong>
+                      <p>Swipe through the market lifecycle before you touch the live dashboard.</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
-                <form onSubmit={handleJoinGroup} className="compact-form form-stack">
-                  <span className="subtle-copy">Join with a code from your group admin</span>
-                  <input
-                    value={joinCode}
-                    onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-                    placeholder="Join code"
-                    required
-                  />
-                  <button className="primary-button" type="submit" disabled={busyAction === "join-group"}>
-                    Join first group
-                  </button>
-                </form>
+              {isVenmoSlide ? (
+                <div className="slideshow-stage">
+                  <div className="slide-callout">
+                    <span className="preview-label">Payout setup</span>
+                    <strong>{needsVenmoHandle ? "Add your handle to continue" : `Saved as @${profile.user.venmoHandle}`}</strong>
+                    <p>This step gets payment instructions right anywhere the app asks people to fund or settle a position.</p>
+                  </div>
 
-                <form onSubmit={handleCreateGroup} className="compact-form form-stack">
-                  <span className="subtle-copy">Starting the first group yourself?</span>
-                  <input
-                    value={groupName}
-                    onChange={(event) => setGroupName(event.target.value)}
-                    placeholder="The Parkers"
-                    required
-                  />
-                  <button className="ghost-button" type="submit" disabled={busyAction === "create-group"}>
-                    Create a new group
-                  </button>
-                </form>
-              </div>
+                  <form onSubmit={handleSaveVenmoHandle} className="compact-form form-stack single-step-form">
+                    <span className="subtle-copy">Where should people Venmo you?</span>
+                    <input
+                      value={venmoHandle}
+                      onChange={(event) => setVenmoHandle(event.target.value)}
+                      placeholder="@yourhandle"
+                      required
+                    />
+                    <button className="secondary-button" type="submit" disabled={busyAction === "venmo"}>
+                      {needsVenmoHandle ? "Save Venmo handle" : "Update Venmo handle"}
+                    </button>
+                  </form>
+                </div>
+              ) : null}
 
-              <div className="onboarding-footer">
+              {isGroupSlide ? (
+                <div className="slideshow-stage">
+                  <div className="group-setup-switcher">
+                    <button
+                      type="button"
+                      className={groupSetupMode === "join" ? "group-setup-pill active" : "group-setup-pill"}
+                      onClick={() => setGroupSetupMode("join")}
+                    >
+                      Join a group
+                    </button>
+                    <button
+                      type="button"
+                      className={groupSetupMode === "create" ? "group-setup-pill active" : "group-setup-pill"}
+                      onClick={() => setGroupSetupMode("create")}
+                    >
+                      Create a group
+                    </button>
+                  </div>
+
+                  {groupSetupMode === "join" ? (
+                    <form onSubmit={handleJoinGroup} className="compact-form form-stack single-step-form">
+                      <span className="subtle-copy">Enter the code from your group admin</span>
+                      <input
+                        value={joinCode}
+                        onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+                        placeholder="Join code"
+                        required
+                      />
+                      <button className="primary-button" type="submit" disabled={busyAction === "join-group"}>
+                        Join first group
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleCreateGroup} className="compact-form form-stack single-step-form">
+                      <span className="subtle-copy">Name the first private group</span>
+                      <input
+                        value={groupName}
+                        onChange={(event) => setGroupName(event.target.value)}
+                        placeholder="The Parkers"
+                        required
+                      />
+                      <button className="ghost-button" type="submit" disabled={busyAction === "create-group"}>
+                        Create a new group
+                      </button>
+                    </form>
+                  )}
+
+                  <div className="slide-callout">
+                    <span className="preview-label">Group setup</span>
+                    <strong>
+                      {needsFirstGroup
+                        ? "Choose one path for your first group"
+                        : `Connected to ${profile.groups[0]?.name ?? "your first group"}`}
+                    </strong>
+                    <p>Once this is done, the tutorial slides unlock and you can move through the actual app flow screen by screen.</p>
+                  </div>
+                </div>
+              ) : null}
+
+              {isTutorialSlide ? (
+                <div className="slideshow-stage tutorial-stage">
+                  <div className="tutorial-number">{currentTutorialIndex + 1}</div>
+                  <p className="cover-title">{activeTutorialSlide.title}</p>
+                  <p className="cover-copy">{activeTutorialSlide.body}</p>
+                </div>
+              ) : null}
+
+              <div className="onboarding-footer slideshow-controls">
                 <button
-                  className="primary-button"
+                  className="ghost-button"
                   type="button"
-                  disabled={!onboardingReady}
-                  onClick={() => {
-                    window.localStorage.setItem(onboardingKey, "true");
-                    setShowOnboarding(false);
-                    setStatusMessage("Setup complete. Your desk is ready.");
-                  }}
+                  disabled={onboardingStep === 0}
+                  onClick={() => setOnboardingStep((current) => Math.max(0, current - 1))}
                 >
-                  Continue to dashboard
+                  Previous
                 </button>
-                <span className="subtle-copy">
-                  {onboardingReady
-                    ? "You can still edit Venmo or join more groups later from Settings."
-                    : "You’ll unlock the dashboard once both setup steps are done."}
-                </span>
-              </div>
-            </article>
 
-            <article className="panel tutorial-panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="kicker">Tutorial</p>
-                  <h2>How the site works</h2>
-                </div>
-              </div>
-
-              <div className="tutorial-list">
-                <div className="tutorial-step">
-                  <div className="tutorial-number">1</div>
-                  <div>
-                    <strong>Pick the right group.</strong>
-                    <p>
-                      Each market belongs to a single private group. Once you enter the dashboard, use the group list on the left to switch between circles and see only the markets visible to that group.
-                    </p>
-                  </div>
-                </div>
-                <div className="tutorial-step">
-                  <div className="tutorial-number">2</div>
-                  <div>
-                    <strong>Create a market.</strong>
-                    <p>
-                      Use the “Launch a new thesis” panel to choose who the market is about, write the question, add settlement notes, and choose when betting closes.
-                    </p>
-                  </div>
-                </div>
-                <div className="tutorial-step">
-                  <div className="tutorial-number">3</div>
-                  <div>
-                    <strong>Place your position.</strong>
-                    <p>
-                      On each market card, choose YES or NO, enter your stake, and submit. The site will tell you exactly who to Venmo so the creator can escrow the money.
-                    </p>
-                  </div>
-                </div>
-                <div className="tutorial-step">
-                  <div className="tutorial-number">4</div>
-                  <div>
-                    <strong>Wait for payment confirmation.</strong>
-                    <p>
-                      Submitted positions stay pending until the market creator confirms they received your payment. After that, your stake becomes live in the market totals.
-                    </p>
-                  </div>
-                </div>
-                <div className="tutorial-step">
-                  <div className="tutorial-number">5</div>
-                  <div>
-                    <strong>Resolve the result.</strong>
-                    <p>
-                      When the outcome is known, an admin resolves the market YES or NO. The app calculates who should be paid and tracks payout confirmations.
-                    </p>
-                  </div>
-                </div>
-                <div className="tutorial-step">
-                  <div className="tutorial-number">6</div>
-                  <div>
-                    <strong>Use settings anytime.</strong>
-                    <p>
-                      The Settings panel lets you top up your balance, update your Venmo handle, create a new group, or join another one later without repeating onboarding.
-                    </p>
-                  </div>
-                </div>
+                {onboardingStep < totalOnboardingSteps - 1 ? (
+                  <button
+                    className="primary-button"
+                    type="button"
+                    disabled={
+                      (isVenmoSlide && needsVenmoHandle) ||
+                      (isGroupSlide && needsFirstGroup) ||
+                      (isTutorialSlide && !canOpenTutorialSlides)
+                    }
+                    onClick={() => setOnboardingStep((current) => Math.min(totalOnboardingSteps - 1, current + 1))}
+                  >
+                    {isIntroSlide ? "Start tutorial" : isGroupSlide ? "Open tutorial slides" : "Next"}
+                  </button>
+                ) : (
+                  <button
+                    className="primary-button"
+                    type="button"
+                    disabled={!onboardingReady}
+                    onClick={() => {
+                      window.localStorage.setItem(onboardingKey, "true");
+                      setShowOnboarding(false);
+                      setStatusMessage("Setup complete. Your desk is ready.");
+                    }}
+                  >
+                    Continue to dashboard
+                  </button>
+                )}
               </div>
             </article>
           </section>

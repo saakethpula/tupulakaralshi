@@ -159,6 +159,12 @@ textarea::placeholder {
   border: 1px solid rgba(125, 211, 252, 0.12);
 }
 
+.progress-card.active {
+  background: linear-gradient(145deg, rgba(34, 211, 238, 0.22), rgba(59, 130, 246, 0.12));
+  border-color: rgba(103, 232, 249, 0.4);
+  transform: translateY(-1px);
+}
+
 .progress-card.complete {
   background: linear-gradient(145deg, rgba(16, 185, 129, 0.18), rgba(34, 211, 238, 0.12));
   border-color: rgba(110, 231, 183, 0.28);
@@ -172,14 +178,30 @@ textarea::placeholder {
 }
 
 .onboarding-grid {
-  grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.05fr);
+  grid-template-columns: minmax(0, 880px);
   align-items: start;
+  justify-content: center;
 }
 
 .onboarding-panel,
 .tutorial-panel {
   display: grid;
   gap: 1rem;
+}
+
+.onboarding-slide-panel {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.onboarding-slide-heading {
+  align-items: start;
+}
+
+.onboarding-kicker {
+  font-size: 0.95rem;
+  letter-spacing: 0.22em;
 }
 
 .onboarding-forms {
@@ -217,6 +239,111 @@ textarea::placeholder {
   font-family: "Space Grotesk", sans-serif;
   font-weight: 700;
   background: linear-gradient(135deg, var(--teal), #8bffe5);
+}
+
+.slideshow-stage,
+.tutorial-cover,
+.tutorial-stage,
+.single-step-form,
+.cover-highlights {
+  display: grid;
+  gap: 1rem;
+}
+
+.slideshow-stage {
+  min-height: 420px;
+  padding: 1.75rem;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(34, 211, 238, 0.14), transparent 30%),
+    linear-gradient(180deg, rgba(4, 13, 24, 0.92), rgba(7, 17, 31, 0.8));
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  align-content: center;
+}
+
+.tutorial-cover {
+  min-height: 500px;
+}
+
+.tutorial-stage {
+  justify-items: start;
+}
+
+.cover-badge,
+.group-setup-pill {
+  width: fit-content;
+  border-radius: 999px;
+}
+
+.cover-badge {
+  padding: 0.55rem 0.9rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #03111d;
+  background: linear-gradient(135deg, #8bffe5, var(--teal));
+  font-weight: 700;
+}
+
+.cover-title {
+  margin: 0;
+  max-width: 18ch;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 1.05;
+}
+
+.cover-copy {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+
+.cover-highlights {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.cover-highlight,
+.slide-callout {
+  padding: 1rem 1.1rem;
+  border-radius: 22px;
+  background: rgba(5, 15, 29, 0.72);
+  border: 1px solid rgba(125, 211, 252, 0.12);
+}
+
+.cover-highlight p,
+.slide-callout p {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.single-step-form {
+  max-width: 480px;
+}
+
+.group-setup-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.group-setup-pill {
+  padding: 0.8rem 1.1rem;
+  background: rgba(4, 13, 24, 0.7);
+  color: var(--text);
+  border: 1px solid rgba(125, 211, 252, 0.18);
+}
+
+.group-setup-pill.active {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.24), rgba(16, 185, 129, 0.18));
+  border-color: rgba(103, 232, 249, 0.36);
+}
+
+.slideshow-controls {
+  padding-top: 0;
 }
 
 .hero-copy,
@@ -756,6 +883,11 @@ button:disabled {
   .hero-meta {
     justify-items: stretch;
   }
+
+  .slideshow-stage,
+  .tutorial-cover {
+    min-height: auto;
+  }
 }
 
 @media (max-width: 720px) {
@@ -775,6 +907,15 @@ button:disabled {
   .hero-copy h1,
   .dashboard-hero h1 {
     font-size: 2.6rem;
+  }
+
+  .cover-title {
+    font-size: 2rem;
+  }
+
+  .onboarding-slide-panel,
+  .slideshow-stage {
+    padding: 1.2rem;
   }
 
   .market-footer-actions {
