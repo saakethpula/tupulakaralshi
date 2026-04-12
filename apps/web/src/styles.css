@@ -110,6 +110,7 @@ textarea::placeholder {
 
 .landing-hero,
 .dashboard-hero,
+.onboarding-hero,
 .panel,
 .empty-panel,
 .loading-panel {
@@ -123,6 +124,99 @@ textarea::placeholder {
   gap: 1.5rem;
   padding: 2rem;
   align-items: stretch;
+}
+
+.onboarding-shell,
+.onboarding-progress,
+.onboarding-grid,
+.onboarding-forms,
+.tutorial-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.onboarding-shell {
+  gap: 1.25rem;
+}
+
+.onboarding-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 1.5rem;
+  padding: 2rem;
+  align-items: center;
+}
+
+.progress-card,
+.tutorial-step,
+.tutorial-number {
+  border-radius: 24px;
+}
+
+.progress-card {
+  padding: 1.15rem;
+  background: rgba(4, 13, 24, 0.54);
+  border: 1px solid rgba(125, 211, 252, 0.12);
+}
+
+.progress-card.complete {
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.18), rgba(34, 211, 238, 0.12));
+  border-color: rgba(110, 231, 183, 0.28);
+}
+
+.progress-card p,
+.tutorial-step p {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.onboarding-grid {
+  grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.05fr);
+  align-items: start;
+}
+
+.onboarding-panel,
+.tutorial-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.onboarding-forms {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.onboarding-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.5rem;
+}
+
+.tutorial-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(3, 10, 20, 0.42);
+  border: 1px solid rgba(125, 211, 252, 0.1);
+}
+
+.tutorial-step strong {
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.tutorial-number {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  color: #03111d;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--teal), #8bffe5);
 }
 
 .hero-copy,
@@ -639,7 +733,9 @@ button:disabled {
 }
 
 @media (max-width: 900px) {
-  .landing-hero {
+  .landing-hero,
+  .onboarding-hero,
+  .onboarding-grid {
     grid-template-columns: 1fr;
   }
 
@@ -669,6 +765,7 @@ button:disabled {
 
   .landing-hero,
   .dashboard-hero,
+  .onboarding-hero,
   .panel,
   .market-panel {
     padding: 1rem;

@@ -21,6 +21,7 @@ import {
 
 const DEFAULT_TRADE_AMOUNT = "25";
 const GENERAL_MARKET_VALUE = "GENERAL";
+const ONBOARDING_STORAGE_PREFIX = "first-steps-complete:";
 
 function tomorrowAtNoon() {
   const date = new Date();
@@ -69,6 +70,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [busyAction, setBusyAction] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const selectedGroup = useMemo(
     () => profile?.groups.find((group) => group.id === selectedGroupId) ?? null,
@@ -80,6 +82,10 @@ export default function App() {
       [...(selectedGroup?.members ?? [])].sort((left, right) => right.balance - left.balance),
     [selectedGroup]
   );
+
+  const needsVenmoHandle = !profile?.user.venmoHandle;
+  const needsFirstGroup = (profile?.groups.length ?? 0) === 0;
+  const onboardingReady = !needsVenmoHandle && !needsFirstGroup;
 
   async function refreshProfile(accessToken: string) {
     const nextProfile = await getCurrentUser(accessToken);
@@ -158,6 +164,19 @@ export default function App() {
       setError(requestError instanceof Error ? requestError.message : "Failed to load markets.");
     });
   }, [selectedGroupId, token]);
+
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+
+    const onboardingKey = `${ONBOARDING_STORAGE_PREFIX}${profile.user.id}`;
+    const hasCompletedOnboarding = window.localStorage.getItem(onboardingKey) === "true";
+
+    if ((!profile.user.venmoHandle || profile.groups.length === 0) && !hasCompletedOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, [profile]);
 
   function updateTradeDraft(marketId: string, patch: Partial<TradeDraft>) {
     setTradeDrafts((currentDrafts) => ({
@@ -427,6 +446,211 @@ export default function App() {
               <p>Track available cash, committed stakes, and automatic winner payouts.</p>
             </div>
           </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <main className="shell">
+        <section className="loading-panel">Loading your workspace...</section>
+      </main>
+    );
+  }
+
+  if (showOnboarding) {
+    const onboardingKey = `${ONBOARDING_STORAGE_PREFIX}${profile.user.id}`;
+
+    return (
+      <main className="shell app-shell">
+        <section className="onboarding-shell">
+          <article className="onboarding-hero">
+            <div className="hero-copy">
+              <p className="kicker">First steps</p>
+              <h1>Set up payouts, join a group, and learn the flow.</h1>
+              <p className="hero-lede">
+                Before you start trading, we need two quick things: where people should pay you on Venmo and which group you belong to. Right after that, this page walks you through the site step by step.
+              </p>
+            </div>
+            <div className="onboarding-progress">
+              <div className={needsVenmoHandle ? "progress-card" : "progress-card complete"}>
+                <span className="preview-label">Step 1</span>
+                <strong>{needsVenmoHandle ? "Add your Venmo" : "Venmo linked"}</strong>
+                <p>
+                  {needsVenmoHandle
+                    ? "Save the handle people should use when funding or settling your positions."
+                    : `Payments can now be routed to @${profile.user.venmoHandle}.`}
+                </p>
+              </div>
+              <div className={needsFirstGroup ? "progress-card" : "progress-card complete"}>
+                <span className="preview-label">Step 2</span>
+                <strong>{needsFirstGroup ? "Join your first group" : "Group connected"}</strong>
+                <p>
+                  {needsFirstGroup
+                    ? "Use a join code from someone else or create the first group yourself."
+                    : `You’re connected to ${profile.groups[0]?.name ?? "your first group"}.`}
+                </p>
+              </div>
+              <div className={onboardingReady ? "progress-card complete" : "progress-card"}>
+                <span className="preview-label">Step 3</span>
+                <strong>{onboardingReady ? "Tutorial unlocked" : "Finish setup to continue"}</strong>
+                <p>
+                  Learn how to create markets, place positions, confirm payments, and resolve outcomes without guessing.
+                </p>
+              </div>
+            </div>
+          </article>
+
+          <section className="status-banner">
+            <span>{statusMessage}</span>
+            {error ? <strong>{error}</strong> : null}
+          </section>
+
+          <section className="onboarding-grid">
+            <article className="panel onboarding-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="kicker">Setup</p>
+                  <h2>Finish your account basics</h2>
+                </div>
+                <span className="subtle-copy">
+                  {onboardingReady ? "You’re ready for the dashboard." : "Complete both steps to continue."}
+                </span>
+              </div>
+
+              <div className="onboarding-forms">
+                <form onSubmit={handleSaveVenmoHandle} className="compact-form form-stack">
+                  <span className="subtle-copy">Where should people Venmo you?</span>
+                  <input
+                    value={venmoHandle}
+                    onChange={(event) => setVenmoHandle(event.target.value)}
+                    placeholder="@yourhandle"
+                    required
+                  />
+                  <button
+                    className="secondary-button"
+                    type="submit"
+                    disabled={busyAction === "venmo"}
+                  >
+                    {needsVenmoHandle ? "Save Venmo handle" : "Update Venmo handle"}
+                  </button>
+                </form>
+
+                <form onSubmit={handleJoinGroup} className="compact-form form-stack">
+                  <span className="subtle-copy">Join with a code from your group admin</span>
+                  <input
+                    value={joinCode}
+                    onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+                    placeholder="Join code"
+                    required
+                  />
+                  <button className="primary-button" type="submit" disabled={busyAction === "join-group"}>
+                    Join first group
+                  </button>
+                </form>
+
+                <form onSubmit={handleCreateGroup} className="compact-form form-stack">
+                  <span className="subtle-copy">Starting the first group yourself?</span>
+                  <input
+                    value={groupName}
+                    onChange={(event) => setGroupName(event.target.value)}
+                    placeholder="The Parkers"
+                    required
+                  />
+                  <button className="ghost-button" type="submit" disabled={busyAction === "create-group"}>
+                    Create a new group
+                  </button>
+                </form>
+              </div>
+
+              <div className="onboarding-footer">
+                <button
+                  className="primary-button"
+                  type="button"
+                  disabled={!onboardingReady}
+                  onClick={() => {
+                    window.localStorage.setItem(onboardingKey, "true");
+                    setShowOnboarding(false);
+                    setStatusMessage("Setup complete. Your desk is ready.");
+                  }}
+                >
+                  Continue to dashboard
+                </button>
+                <span className="subtle-copy">
+                  {onboardingReady
+                    ? "You can still edit Venmo or join more groups later from Settings."
+                    : "You’ll unlock the dashboard once both setup steps are done."}
+                </span>
+              </div>
+            </article>
+
+            <article className="panel tutorial-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="kicker">Tutorial</p>
+                  <h2>How the site works</h2>
+                </div>
+              </div>
+
+              <div className="tutorial-list">
+                <div className="tutorial-step">
+                  <div className="tutorial-number">1</div>
+                  <div>
+                    <strong>Pick the right group.</strong>
+                    <p>
+                      Each market belongs to a single private group. Once you enter the dashboard, use the group list on the left to switch between circles and see only the markets visible to that group.
+                    </p>
+                  </div>
+                </div>
+                <div className="tutorial-step">
+                  <div className="tutorial-number">2</div>
+                  <div>
+                    <strong>Create a market.</strong>
+                    <p>
+                      Use the “Launch a new thesis” panel to choose who the market is about, write the question, add settlement notes, and choose when betting closes.
+                    </p>
+                  </div>
+                </div>
+                <div className="tutorial-step">
+                  <div className="tutorial-number">3</div>
+                  <div>
+                    <strong>Place your position.</strong>
+                    <p>
+                      On each market card, choose YES or NO, enter your stake, and submit. The site will tell you exactly who to Venmo so the creator can escrow the money.
+                    </p>
+                  </div>
+                </div>
+                <div className="tutorial-step">
+                  <div className="tutorial-number">4</div>
+                  <div>
+                    <strong>Wait for payment confirmation.</strong>
+                    <p>
+                      Submitted positions stay pending until the market creator confirms they received your payment. After that, your stake becomes live in the market totals.
+                    </p>
+                  </div>
+                </div>
+                <div className="tutorial-step">
+                  <div className="tutorial-number">5</div>
+                  <div>
+                    <strong>Resolve the result.</strong>
+                    <p>
+                      When the outcome is known, an admin resolves the market YES or NO. The app calculates who should be paid and tracks payout confirmations.
+                    </p>
+                  </div>
+                </div>
+                <div className="tutorial-step">
+                  <div className="tutorial-number">6</div>
+                  <div>
+                    <strong>Use settings anytime.</strong>
+                    <p>
+                      The Settings panel lets you top up your balance, update your Venmo handle, create a new group, or join another one later without repeating onboarding.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
         </section>
       </main>
     );
