@@ -18,7 +18,7 @@ import {
   type Market
 } from "./lib/api";
 
-const DEFAULT_TRADE_AMOUNT = "25";
+const DEFAULT_TRADE_AMOUNT = "5";
 const GENERAL_MARKET_VALUE = "GENERAL";
 const ONBOARDING_STORAGE_PREFIX = "first-steps-complete:";
 
@@ -132,7 +132,7 @@ export default function App() {
             : tutorialPracticeStep === "pick-side"
               ? "Step 1: choose YES or NO on this fake market to start the tutorial bet."
               : tutorialPracticeStep === "enter-amount"
-                ? "Step 2: type the amount you want to stake. Try something like 25."
+                ? "Step 2: type the amount you want to stake. Try something like 5."
                 : tutorialPracticeStep === "submit-bet"
                   ? "Step 3: submit the fake bet so you can see the payment instructions."
                   : tutorialPracticeStep === "send-venmo"
@@ -542,9 +542,9 @@ export default function App() {
           <article className="onboarding-hero">
             <div className="hero-copy">
               <p className="kicker onboarding-kicker">Interactive tutorial</p>
-              <h1>Walk through the app one screen at a time.</h1>
+              <h1>Learn the flow before you touch the live board.</h1>
               <p className="hero-lede">
-                This onboarding now works like a slideshow. First we set up payouts, then we get you into a group, then we walk through exactly how the market flow works before you land on the dashboard.
+                First we connect your payment handle, then we get you into a group, then we walk through one complete practice market so the live dashboard feels obvious.
               </p>
             </div>
             <div className="onboarding-progress">
@@ -552,7 +552,7 @@ export default function App() {
                 <span className="preview-label">Start</span>
                 <strong>Tutorial overview</strong>
                 <p>
-                  A clear first screen that explains what is about to happen before any setup fields appear.
+                  A quick preview of the setup and practice flow before you enter the real app.
                 </p>
               </div>
               <div
@@ -568,7 +568,7 @@ export default function App() {
                 <strong>{needsVenmoHandle ? "Add your Venmo" : "Venmo linked"}</strong>
                 <p>
                   {needsVenmoHandle
-                    ? "Save the handle people should use when funding or settling your positions."
+                    ? "Save the handle people should use when paying or settling with you."
                     : `Payments can now be routed to @${profile.user.venmoHandle}.`}
                 </p>
               </div>
@@ -600,7 +600,7 @@ export default function App() {
               >
                 <span className="preview-label">Step 3</span>
                 <strong>{canStartPractice ? "Live tutorial" : "Finish setup to unlock tutorial"}</strong>
-                <p>Practice a fake bet, see the Venmo confirmation pattern, and then unlock the real dashboard.</p>
+                <p>Practice a fake bet, see the payment-confirmation flow, and then unlock the real dashboard.</p>
               </div>
             </div>
           </article>
@@ -639,14 +639,14 @@ export default function App() {
               {isIntroSlide ? (
                 <div className="slideshow-stage tutorial-cover">
                   <div className="cover-badge">Interactive walkthrough</div>
-                  <p className="cover-title">We’ll set up your account, then show the product flow one step at a time.</p>
+                  <p className="cover-title">We’ll set up your account, then rehearse the real flow one step at a time.</p>
                   <p className="cover-copy">
-                    You won’t have to scan a long wall of onboarding anymore. Each screen has one job, and the tutorial starts with this dedicated intro so it feels clearly separate from the actual app.
+                    Each screen has one job. Save your payment handle, join or create a group, then place one practice position so the live board already feels familiar.
                   </p>
                   <div className="cover-highlights">
                     <div className="cover-highlight">
                       <strong>1. Save Venmo</strong>
-                      <p>Make sure everyone knows where to send money for funding and payouts.</p>
+                      <p>Make sure everyone knows where to send money for market payments and settlement.</p>
                     </div>
                     <div className="cover-highlight">
                       <strong>2. Pick your group path</strong>
@@ -737,7 +737,7 @@ export default function App() {
                         ? "Choose one path for your first group"
                         : `Connected to ${profile.groups[0]?.name ?? "your first group"}`}
                     </strong>
-                    <p>Once this is done, you’ll enter a fake market and practice the real betting flow step by step.</p>
+                    <p>Once this is done, you’ll enter a practice market and rehearse the exact flow used on the live board.</p>
                   </div>
                 </div>
               ) : null}
@@ -781,8 +781,8 @@ export default function App() {
                         <strong>{tutorialBetPlaced ? formatMoney(tutorialAmountNumber) : formatMoney(0)}</strong>
                       </div>
                       <div>
-                        <span>Closes</span>
-                        <strong>Tomorrow at noon</strong>
+                        <span>Net if correct</span>
+                        <strong>{tutorialBetPlaced ? formatSignedMoney(tutorialAmountNumber) : formatSignedMoney(0)}</strong>
                       </div>
                     </div>
 
@@ -913,7 +913,7 @@ export default function App() {
                   {tutorialPracticeStep === "done" ? (
                     <div className="tutorial-success-banner">
                       <strong>You’ve completed the fake bet flow.</strong>
-                      <p>The real dashboard uses the same steps: choose a side, enter an amount, save the bet, then follow the Venmo confirmation prompt.</p>
+                      <p>The live board uses the same steps: choose a side, enter an amount, save the position, then follow the payment confirmation prompt.</p>
                     </div>
                   ) : null}
                 </div>
@@ -1002,9 +1002,79 @@ export default function App() {
         </section>
       ) : null}
 
+      {settingsOpen ? (
+        <section className="settings-overlay" aria-label="Settings">
+          <button
+            className="settings-backdrop"
+            type="button"
+            aria-label="Close settings"
+            onClick={() => setSettingsOpen(false)}
+          />
+          <article className="panel settings-panel settings-modal">
+            <div className="panel-heading settings-modal-heading">
+              <div>
+                <p className="kicker">Settings</p>
+                <h2>Groups and payments</h2>
+              </div>
+              <button
+                className="toolbar-button toolbar-button-secondary"
+                type="button"
+                onClick={() => setSettingsOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="settings-grid">
+              <form onSubmit={handleSaveVenmoHandle} className="form-stack compact-form">
+                <span className="subtle-copy">Your Venmo handle for payment instructions</span>
+                <input
+                  value={venmoHandle}
+                  onChange={(event) => setVenmoHandle(event.target.value)}
+                  placeholder="@yourhandle"
+                  required
+                />
+                <button
+                  className="secondary-button"
+                  type="submit"
+                  disabled={busyAction === "venmo"}
+                >
+                  Save Venmo
+                </button>
+              </form>
+
+              <form onSubmit={handleCreateGroup} className="form-stack compact-form">
+                <span className="subtle-copy">Create a new family group</span>
+                <input
+                  value={groupName}
+                  onChange={(event) => setGroupName(event.target.value)}
+                  placeholder="The Parkers"
+                  required
+                />
+                <button className="primary-button" type="submit" disabled={busyAction === "create-group"}>
+                  Create group
+                </button>
+              </form>
+
+              <form onSubmit={handleJoinGroup} className="form-stack compact-form">
+                <span className="subtle-copy">Join another family group</span>
+                <input
+                  value={joinCode}
+                  onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+                  placeholder="Join code"
+                  required
+                />
+                <button className="ghost-button" type="submit" disabled={busyAction === "join-group"}>
+                  Join group
+                </button>
+              </form>
+            </div>
+          </article>
+        </section>
+      ) : null}
+
       <section className="dashboard-grid">
         <aside className="sidebar-stack">
-          <article className="panel family-strip">
+          <article className="panel family-strip family-panel">
             <div className="panel-heading">
               <div>
                 <p className="kicker">Current family</p>
@@ -1040,62 +1110,7 @@ export default function App() {
             </div>
           </article>
 
-          {settingsOpen ? (
-            <article className="panel settings-panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="kicker">Settings</p>
-                  <h2>Groups and payments</h2>
-                </div>
-              </div>
-              <div className="settings-grid">
-                <form onSubmit={handleSaveVenmoHandle} className="form-stack compact-form">
-                  <span className="subtle-copy">Your Venmo handle for payment instructions</span>
-                  <input
-                    value={venmoHandle}
-                    onChange={(event) => setVenmoHandle(event.target.value)}
-                    placeholder="@yourhandle"
-                    required
-                  />
-                  <button
-                    className="secondary-button"
-                    type="submit"
-                    disabled={busyAction === "venmo"}
-                  >
-                    Save Venmo
-                  </button>
-                </form>
-
-                <form onSubmit={handleCreateGroup} className="form-stack compact-form">
-                  <span className="subtle-copy">Create a new family group</span>
-                  <input
-                    value={groupName}
-                    onChange={(event) => setGroupName(event.target.value)}
-                    placeholder="The Parkers"
-                    required
-                  />
-                  <button className="primary-button" type="submit" disabled={busyAction === "create-group"}>
-                    Create group
-                  </button>
-                </form>
-
-                <form onSubmit={handleJoinGroup} className="form-stack compact-form">
-                  <span className="subtle-copy">Join another family group</span>
-                  <input
-                    value={joinCode}
-                    onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-                    placeholder="Join code"
-                    required
-                  />
-                  <button className="ghost-button" type="submit" disabled={busyAction === "join-group"}>
-                    Join group
-                  </button>
-                </form>
-              </div>
-            </article>
-          ) : null}
-
-          <article className="panel">
+          <article className="panel leaderboard-panel">
             <div className="panel-heading">
               <div>
                 <p className="kicker">Members</p>

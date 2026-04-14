@@ -137,24 +137,28 @@ textarea::placeholder {
 }
 
 .onboarding-hero {
-  display: block;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  border-radius: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 1.25rem;
   min-height: 0;
+  padding: 1.35rem;
+  border-radius: 30px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
 }
 
 .onboarding-hero .hero-copy {
-  display: none;
+  display: grid;
+  align-content: center;
+  gap: 0.85rem;
 }
 
 .onboarding-progress {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
 }
 
 .progress-card,
@@ -164,25 +168,25 @@ textarea::placeholder {
 }
 
 .progress-card {
-  min-height: 8px;
-  padding: 0;
-  background: rgba(125, 211, 252, 0.1);
-  border: 1px solid rgba(125, 211, 252, 0.12);
-}
-
-.progress-card > * {
-  display: none;
+  min-height: 136px;
+  padding: 1rem 1.05rem;
+  background: rgba(255, 252, 248, 0.9);
+  border: 1px solid rgba(126, 111, 93, 0.1);
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
 }
 
 .progress-card.active {
-  background: linear-gradient(145deg, rgba(34, 211, 238, 0.85), rgba(59, 130, 246, 0.7));
-  border-color: rgba(103, 232, 249, 0.4);
+  background: linear-gradient(145deg, rgba(234, 226, 216, 0.96), rgba(248, 242, 235, 0.96));
+  border-color: rgba(159, 137, 114, 0.26);
+  box-shadow: 0 14px 30px rgba(76, 56, 34, 0.08);
   transform: none;
 }
 
 .progress-card.complete {
-  background: linear-gradient(145deg, rgba(16, 185, 129, 0.75), rgba(34, 211, 238, 0.5));
-  border-color: rgba(110, 231, 183, 0.28);
+  background: linear-gradient(145deg, rgba(231, 241, 230, 0.96), rgba(245, 249, 243, 0.96));
+  border-color: rgba(123, 154, 116, 0.22);
 }
 
 .progress-card p,
@@ -237,8 +241,8 @@ textarea::placeholder {
   grid-template-columns: auto 1fr;
   gap: 1rem;
   padding: 1rem;
-  background: rgba(3, 10, 20, 0.42);
-  border: 1px solid rgba(125, 211, 252, 0.1);
+  background: rgba(249, 244, 238, 0.9);
+  border: 1px solid rgba(126, 111, 93, 0.08);
 }
 
 .tutorial-step strong {
@@ -250,10 +254,10 @@ textarea::placeholder {
   height: 2.5rem;
   display: grid;
   place-items: center;
-  color: #03111d;
+  color: #4b3524;
   font-family: "Space Grotesk", sans-serif;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--teal), #8bffe5);
+  background: linear-gradient(135deg, rgba(230, 214, 196, 0.96), rgba(247, 239, 231, 0.96));
 }
 
 .slideshow-stage,
@@ -270,9 +274,9 @@ textarea::placeholder {
   padding: 1.4rem;
   border-radius: 28px;
   background:
-    radial-gradient(circle at top right, rgba(34, 211, 238, 0.14), transparent 30%),
-    linear-gradient(180deg, rgba(4, 13, 24, 0.92), rgba(7, 17, 31, 0.8));
-  border: 1px solid rgba(125, 211, 252, 0.14);
+    radial-gradient(circle at top right, rgba(226, 210, 191, 0.34), transparent 30%),
+    linear-gradient(180deg, rgba(255, 251, 246, 0.96), rgba(247, 241, 234, 0.92));
+  border: 1px solid rgba(126, 111, 93, 0.1);
   align-content: center;
 }
 
@@ -295,8 +299,8 @@ textarea::placeholder {
   font-size: 0.82rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #03111d;
-  background: linear-gradient(135deg, #8bffe5, var(--teal));
+  color: #4b3524;
+  background: linear-gradient(135deg, rgba(231, 216, 199, 0.96), rgba(248, 240, 232, 0.96));
   font-weight: 700;
 }
 
@@ -324,8 +328,8 @@ textarea::placeholder {
 .slide-callout {
   padding: 1rem 1.1rem;
   border-radius: 22px;
-  background: rgba(5, 15, 29, 0.72);
-  border: 1px solid rgba(125, 211, 252, 0.12);
+  background: rgba(252, 247, 241, 0.94);
+  border: 1px solid rgba(126, 111, 93, 0.08);
 }
 
 .cover-highlight p,
@@ -347,14 +351,14 @@ textarea::placeholder {
 
 .group-setup-pill {
   padding: 0.8rem 1.1rem;
-  background: rgba(4, 13, 24, 0.7);
+  background: rgba(249, 244, 238, 0.92);
   color: var(--text);
-  border: 1px solid rgba(125, 211, 252, 0.18);
+  border: 1px solid rgba(126, 111, 93, 0.12);
 }
 
 .group-setup-pill.active {
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.24), rgba(16, 185, 129, 0.18));
-  border-color: rgba(103, 232, 249, 0.36);
+  background: linear-gradient(135deg, rgba(231, 216, 199, 0.96), rgba(248, 240, 232, 0.96));
+  border-color: rgba(159, 137, 114, 0.24);
 }
 
 .slideshow-controls {
@@ -380,8 +384,8 @@ textarea::placeholder {
 .tutorial-success-banner {
   padding: 1rem 1.1rem;
   border-radius: 22px;
-  background: rgba(5, 15, 29, 0.82);
-  border: 1px solid rgba(125, 211, 252, 0.14);
+  background: rgba(252, 247, 241, 0.94);
+  border: 1px solid rgba(126, 111, 93, 0.08);
 }
 
 .tutorial-guide-card strong,
@@ -397,8 +401,8 @@ textarea::placeholder {
 }
 
 .tutorial-market-panel {
-  background: rgba(10, 22, 38, 0.9);
-  border: 1px solid rgba(125, 211, 252, 0.18);
+  background: rgba(255, 252, 248, 0.95);
+  border: 1px solid rgba(126, 111, 93, 0.1);
 }
 
 .tutorial-trade-box {
@@ -412,8 +416,8 @@ textarea::placeholder {
 }
 
 .tutorial-focus-ring.active {
-  border-color: rgba(103, 232, 249, 0.5);
-  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.12);
+  border-color: rgba(159, 137, 114, 0.4);
+  box-shadow: 0 0 0 4px rgba(208, 189, 169, 0.22);
   transform: translateY(-1px);
 }
 
@@ -638,6 +642,45 @@ textarea::placeholder {
   color: #9a5f56;
 }
 
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.settings-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(44, 32, 22, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.settings-modal {
+  position: relative;
+  z-index: 1;
+  width: min(960px, calc(100vw - 2.5rem));
+  max-height: calc(100vh - 2.5rem);
+  overflow: auto;
+  padding: 1.5rem;
+  background: rgba(255, 252, 248, 0.96);
+  box-shadow: 0 28px 70px rgba(49, 35, 24, 0.22);
+}
+
+.settings-modal-heading {
+  position: sticky;
+  top: 0;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 252, 248, 0.96);
+  border-bottom: 1px solid rgba(126, 111, 93, 0.12);
+  z-index: 1;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: minmax(290px, 360px) minmax(0, 1fr);
@@ -647,11 +690,17 @@ textarea::placeholder {
 
 .sidebar-stack,
 .main-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   min-width: 0;
+  align-self: start;
 }
 
 .panel {
   padding: 1.35rem;
+  width: 100%;
+  position: relative;
 }
 
 .panel-heading,
@@ -737,6 +786,7 @@ textarea::placeholder {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  width: 100%;
 }
 
 .compact-form {
@@ -747,7 +797,10 @@ textarea::placeholder {
 }
 
 .member-grid {
+  display: grid;
+  gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  width: 100%;
 }
 
 .sidebar-members {
@@ -755,10 +808,21 @@ textarea::placeholder {
 }
 
 .member-card {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.75rem;
   align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.member-card > div {
+  min-width: 0;
+}
+
+.member-card > div strong,
+.member-card > div span {
+  overflow-wrap: anywhere;
 }
 
 .member-card span {
@@ -768,14 +832,25 @@ textarea::placeholder {
   font-size: 0.85rem;
 }
 
+.member-card > strong {
+  justify-self: end;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .market-board {
   display: grid;
   gap: 1rem;
   min-height: 420px;
+  min-width: 0;
 }
 
 .market-grid {
+  display: grid;
+  gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  width: 100%;
+  min-width: 0;
 }
 
 .market-panel {
@@ -933,16 +1008,6 @@ textarea::placeholder {
   overflow: hidden;
 }
 
-.create-panel::after {
-  content: "";
-  position: absolute;
-  inset: auto -40px -80px auto;
-  width: 180px;
-  height: 180px;
-  background: radial-gradient(circle, rgba(103, 232, 249, 0.24), transparent 65%);
-  pointer-events: none;
-}
-
 .create-market-grid {
   margin-top: 1rem;
 }
@@ -973,7 +1038,38 @@ button:disabled {
   }
 
   .dashboard-grid {
+    display: flex;
+    flex-direction: column;
     grid-template-columns: 1fr;
+  }
+
+  .main-stack,
+  .sidebar-stack {
+    width: 100%;
+  }
+
+  .main-stack {
+    order: 1;
+  }
+
+  .sidebar-stack {
+    order: 2;
+  }
+
+  .market-board {
+    order: 1;
+  }
+
+  .create-panel {
+    order: 2;
+  }
+
+  .leaderboard-panel {
+    order: 3;
+  }
+
+  .family-panel {
+    order: 4;
   }
 
   .toolbar-meta,
@@ -989,6 +1085,16 @@ button:disabled {
   .toolbar-meta {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .settings-modal {
+    width: min(100vw - 1.25rem, 960px);
+    max-height: calc(100vh - 1.25rem);
+    padding: 1.15rem;
+  }
+
+  .settings-modal-heading {
+    align-items: stretch;
   }
 
   .slideshow-stage,

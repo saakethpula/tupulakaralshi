@@ -343,6 +343,22 @@ marketsRouter.put("/:marketId/position", asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "This market is not open for trading." });
   }
 
+  const existingPositions = market.positions.filter((position) => position.userId === currentUser.id);
+  const existingTotalAmount = existingPositions.reduce((total, position) => total + position.amount, 0);
+  const existingSide = existingPositions[0]?.side ?? null;
+
+  if (existingTotalAmount > 0 && input.amount < existingTotalAmount) {
+    return res.status(400).json({
+      message: "You can only increase your position after it has been placed."
+    });
+  }
+
+  if (existingSide && input.amount > 0 && input.side !== existingSide) {
+    return res.status(400).json({
+      message: "Your side is locked after your first bet. You can only add more to the same side."
+    });
+  }
+
   const updatedMarket = await prisma.$transaction(async (tx) => {
     await tx.position.deleteMany({
       where: {
