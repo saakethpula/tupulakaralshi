@@ -21,6 +21,8 @@ import {
 const DEFAULT_TRADE_AMOUNT = "5";
 const GENERAL_MARKET_VALUE = "GENERAL";
 const ONBOARDING_STORAGE_PREFIX = "first-steps-complete:";
+const ONBOARDING_COOKIE_PREFIX = "first_steps_complete_";
+const ONBOARDING_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 const REFERRAL_PARAM_KEYS = ["groupCode", "joinCode", "code"];
 const AUTO_REFRESH_INTERVAL_MS = 2000;
 
@@ -96,6 +98,56 @@ function buildGroupInviteUrl(joinCode: string) {
   const inviteUrl = new URL(window.location.origin + window.location.pathname);
   inviteUrl.searchParams.set("groupCode", joinCode);
   return inviteUrl.toString();
+}
+
+function getOnboardingStorageKey(userId: string) {
+  return `${ONBOARDING_STORAGE_PREFIX}${userId}`;
+}
+
+function getOnboardingCookieName(userId: string) {
+  return `${ONBOARDING_COOKIE_PREFIX}${userId}`;
+}
+
+function readCookie(name: string) {
+  if (typeof document === "undefined") {
+    return "";
+  }
+
+  const cookiePrefix = `${name}=`;
+  const cookie = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(cookiePrefix));
+
+  return cookie ? decodeURIComponent(cookie.slice(cookiePrefix.length)) : "";
+}
+
+function hasCompletedOnboarding(userId: string) {
+  const onboardingStorageKey = getOnboardingStorageKey(userId);
+  const onboardingCookieName = getOnboardingCookieName(userId);
+
+  try {
+    if (window.localStorage.getItem(onboardingStorageKey) === "true") {
+      return true;
+    }
+  } catch {
+    // Fall back to the cookie copy when localStorage is unavailable or corrupted.
+  }
+
+  return readCookie(onboardingCookieName) === "true";
+}
+
+function persistOnboardingCompletion(userId: string) {
+  const onboardingStorageKey = getOnboardingStorageKey(userId);
+  const onboardingCookieName = getOnboardingCookieName(userId);
+
+  try {
+    window.localStorage.setItem(onboardingStorageKey, "true");
+  } catch {
+    // Cookie persistence still keeps onboarding complete if localStorage is unavailable.
+  }
+
+  document.cookie = `${onboardingCookieName}=true; Max-Age=${ONBOARDING_COOKIE_MAX_AGE_SECONDS}; Path=/; SameSite=Lax`;
 }
 
 type TradeDraft = {
@@ -337,12 +389,14 @@ export default function App() {
       return;
     }
 
-    const onboardingKey = `${ONBOARDING_STORAGE_PREFIX}${profile.user.id}`;
-    const hasCompletedOnboarding = window.localStorage.getItem(onboardingKey) === "true";
+    const onboardingComplete = hasCompletedOnboarding(profile.user.id);
 
-    if (!hasCompletedOnboarding) {
+    if (!onboardingComplete) {
       setShowOnboarding(true);
+      return;
     }
+
+    setShowOnboarding(false);
   }, [profile]);
 
   useEffect(() => {
@@ -703,7 +757,6 @@ export default function App() {
   }
 
   if (showOnboarding) {
-    const onboardingKey = `${ONBOARDING_STORAGE_PREFIX}${profile.user.id}`;
     const progressCount = onboardingStep + 1;
     const progressPercent = (progressCount / totalOnboardingSteps) * 100;
 
@@ -1123,7 +1176,7 @@ export default function App() {
                     type="button"
                     disabled={!onboardingReady || tutorialPracticeStep !== "done"}
                     onClick={() => {
-                      window.localStorage.setItem(onboardingKey, "true");
+                      persistOnboardingCompletion(profile.user.id);
                       setShowOnboarding(false);
                       setStatusMessage("Setup complete. Your desk is ready.");
                     }}

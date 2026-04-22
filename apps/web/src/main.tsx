@@ -26,7 +26,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         audience,
         scope: "openid profile email"
       }}
-      cacheLocation="localstorage"
+      cacheLocation="memory"
       useRefreshTokens
     >
       <App />

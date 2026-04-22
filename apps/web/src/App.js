@@ -5,6 +5,8 @@ import { confirmPosition, createGroup, createMarket, deleteMarket, getCurrentUse
 const DEFAULT_TRADE_AMOUNT = "5";
 const GENERAL_MARKET_VALUE = "GENERAL";
 const ONBOARDING_STORAGE_PREFIX = "first-steps-complete:";
+const ONBOARDING_COOKIE_PREFIX = "first_steps_complete_";
+const ONBOARDING_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 const REFERRAL_PARAM_KEYS = ["groupCode", "joinCode", "code"];
 const AUTO_REFRESH_INTERVAL_MS = 2000;
 function tomorrowAtNoon() {
@@ -63,6 +65,47 @@ function buildGroupInviteUrl(joinCode) {
     const inviteUrl = new URL(window.location.origin + window.location.pathname);
     inviteUrl.searchParams.set("groupCode", joinCode);
     return inviteUrl.toString();
+}
+function getOnboardingStorageKey(userId) {
+    return `${ONBOARDING_STORAGE_PREFIX}${userId}`;
+}
+function getOnboardingCookieName(userId) {
+    return `${ONBOARDING_COOKIE_PREFIX}${userId}`;
+}
+function readCookie(name) {
+    if (typeof document === "undefined") {
+        return "";
+    }
+    const cookiePrefix = `${name}=`;
+    const cookie = document.cookie
+        .split(";")
+        .map((part) => part.trim())
+        .find((part) => part.startsWith(cookiePrefix));
+    return cookie ? decodeURIComponent(cookie.slice(cookiePrefix.length)) : "";
+}
+function hasCompletedOnboarding(userId) {
+    const onboardingStorageKey = getOnboardingStorageKey(userId);
+    const onboardingCookieName = getOnboardingCookieName(userId);
+    try {
+        if (window.localStorage.getItem(onboardingStorageKey) === "true") {
+            return true;
+        }
+    }
+    catch {
+        // Fall back to the cookie copy when localStorage is unavailable or corrupted.
+    }
+    return readCookie(onboardingCookieName) === "true";
+}
+function persistOnboardingCompletion(userId) {
+    const onboardingStorageKey = getOnboardingStorageKey(userId);
+    const onboardingCookieName = getOnboardingCookieName(userId);
+    try {
+        window.localStorage.setItem(onboardingStorageKey, "true");
+    }
+    catch {
+        // Cookie persistence still keeps onboarding complete if localStorage is unavailable.
+    }
+    document.cookie = `${onboardingCookieName}=true; Max-Age=${ONBOARDING_COOKIE_MAX_AGE_SECONDS}; Path=/; SameSite=Lax`;
 }
 export default function App() {
     const { isAuthenticated, isLoading, loginWithRedirect, logout, user, getAccessTokenSilently } = useAuth0();
@@ -250,11 +293,12 @@ export default function App() {
         if (!profile) {
             return;
         }
-        const onboardingKey = `${ONBOARDING_STORAGE_PREFIX}${profile.user.id}`;
-        const hasCompletedOnboarding = window.localStorage.getItem(onboardingKey) === "true";
-        if (!hasCompletedOnboarding) {
+        const onboardingComplete = hasCompletedOnboarding(profile.user.id);
+        if (!onboardingComplete) {
             setShowOnboarding(true);
+            return;
         }
+        setShowOnboarding(false);
     }, [profile]);
     useEffect(() => {
         if (!referralJoinCode) {
@@ -553,7 +597,6 @@ export default function App() {
         return (_jsx("main", { className: "shell", children: _jsx("section", { className: "loading-panel", children: "Loading your workspace..." }) }));
     }
     if (showOnboarding) {
-        const onboardingKey = `${ONBOARDING_STORAGE_PREFIX}${profile.user.id}`;
         const progressCount = onboardingStep + 1;
         const progressPercent = (progressCount / totalOnboardingSteps) * 100;
         return (_jsx("main", { className: "shell app-shell", children: _jsxs("section", { className: "onboarding-shell", children: [_jsxs("article", { className: "onboarding-hero", children: [_jsxs("div", { className: "hero-copy", children: [_jsx("p", { className: "kicker onboarding-kicker", children: "Interactive tutorial" }), _jsx("h1", { children: "Learn the flow before you touch the live board." }), _jsx("p", { className: "hero-lede", children: "First we connect your payment handle, then we get you into a group, then we walk through one complete practice market so the live dashboard feels obvious." })] }), _jsxs("div", { className: "onboarding-progress", children: [_jsxs("div", { className: onboardingStep === 0 ? "progress-card active" : "progress-card complete", children: [_jsx("span", { className: "preview-label", children: "Start" }), _jsx("strong", { children: "Tutorial overview" }), _jsx("p", { children: "A quick preview of the setup and practice flow before you enter the real app." })] }), _jsxs("div", { className: onboardingStep === 1
@@ -603,7 +646,7 @@ export default function App() {
                                                                         : "I sent the practice Venmo" })] })) : null] })] }), tutorialPracticeStep === "done" ? (_jsxs("div", { className: "tutorial-success-banner", children: [_jsx("strong", { children: "You\u2019ve completed the fake bet flow." }), _jsx("p", { children: "The live board uses the same steps: choose a side, enter an amount, save the position, then follow the payment confirmation prompt." })] })) : null] })) : null, _jsxs("div", { className: "onboarding-footer slideshow-controls", children: [_jsx("button", { className: "ghost-button", type: "button", disabled: onboardingStep === 0, onClick: () => setOnboardingStep((current) => Math.max(0, current - 1)), children: "Previous" }), onboardingStep < totalOnboardingSteps - 1 ? (_jsx("button", { className: "primary-button", type: "button", disabled: (isVenmoSlide && needsVenmoHandle) ||
                                                 (isGroupSlide && needsFirstGroup) ||
                                                 (isPracticeSlide && !canStartPractice), onClick: () => setOnboardingStep((current) => Math.min(totalOnboardingSteps - 1, current + 1)), children: isIntroSlide ? "Start tutorial" : isGroupSlide ? "Open live tutorial" : "Next" })) : (_jsx("button", { className: "primary-button", type: "button", disabled: !onboardingReady || tutorialPracticeStep !== "done", onClick: () => {
-                                                window.localStorage.setItem(onboardingKey, "true");
+                                                persistOnboardingCompletion(profile.user.id);
                                                 setShowOnboarding(false);
                                                 setStatusMessage("Setup complete. Your desk is ready.");
                                             }, children: "Continue to dashboard" }))] })] }) })] }) }));

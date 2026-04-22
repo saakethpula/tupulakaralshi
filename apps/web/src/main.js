@@ -16,4 +16,4 @@ ReactDOM.createRoot(document.getElementById("root")).render(_jsx(React.StrictMod
             redirect_uri: window.location.origin,
             audience,
             scope: "openid profile email"
-        }, cacheLocation: "localstorage", useRefreshTokens: true, children: _jsx(App, {}) }) }));
+        }, cacheLocation: "memory", useRefreshTokens: true, children: _jsx(App, {}) }) }));
