@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
 
 :root {
-  color-scheme: dark;
+  color-scheme: light dark;
   --bg: #f7f2eb;
   --bg-soft: rgba(245, 238, 228, 0.84);
   --panel: rgba(255, 251, 246, 0.82);
@@ -16,6 +16,46 @@
   --coral: #c98d82;
   --amber: #c7a56a;
   --shadow: 0 24px 50px rgba(82, 63, 45, 0.08);
+  --field-bg: rgba(255, 250, 243, 0.9);
+  --field-bg-focus: rgba(255, 253, 249, 0.98);
+  --field-placeholder: rgba(144, 168, 191, 0.75);
+  --page-bg:
+    radial-gradient(circle at top left, rgba(203, 183, 159, 0.28), transparent 30%),
+    radial-gradient(circle at top right, rgba(221, 200, 185, 0.22), transparent 34%),
+    linear-gradient(180deg, #fbf8f3 0%, #f5eee5 52%, #efe6db 100%);
+  --shell-overlay:
+    radial-gradient(circle at 15% 18%, rgba(255, 255, 255, 0.5), transparent 18%),
+    radial-gradient(circle at 82% 12%, rgba(228, 211, 194, 0.38), transparent 20%);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #2f2e35;
+  --bg-soft: rgba(47, 46, 53, 0.9);
+  --panel: rgba(56, 56, 66, 0.9);
+  --panel-strong: rgba(62, 62, 72, 0.96);
+  --line: rgba(211, 218, 217, 0.14);
+  --line-strong: rgba(211, 218, 217, 0.32);
+  --text: #d3dad9;
+  --muted: rgba(211, 218, 217, 0.82);
+  --teal: #93a2a0;
+  --aqua: #d3dad9;
+  --emerald: #93a2a0;
+  --coral: #8fb7ad;
+  --amber: #d3dad9;
+  --shadow: 0 24px 50px rgba(22, 21, 28, 0.4);
+  --field-bg: rgba(47, 46, 53, 0.92);
+  --field-bg-focus: rgba(62, 62, 72, 0.98);
+  --field-placeholder: rgba(211, 218, 217, 0.6);
+  --accent-soft: rgba(147, 162, 160, 0.18);
+  --accent-warm-soft: rgba(93, 159, 150, 0.2);
+  --page-bg:
+    radial-gradient(circle at top left, rgba(93, 159, 150, 0.2), transparent 34%),
+    radial-gradient(circle at top right, rgba(147, 162, 160, 0.14), transparent 38%),
+    linear-gradient(180deg, #2f2e35 0%, #383842 52%, #2f2e35 100%);
+  --shell-overlay:
+    radial-gradient(circle at 15% 18%, rgba(211, 218, 217, 0.06), transparent 18%),
+    radial-gradient(circle at 82% 12%, rgba(93, 159, 150, 0.16), transparent 20%);
 }
 
 * {
@@ -23,17 +63,14 @@
 }
 
 html {
-  background:
-    radial-gradient(circle at top left, rgba(203, 183, 159, 0.28), transparent 30%),
-    radial-gradient(circle at top right, rgba(221, 200, 185, 0.22), transparent 34%),
-    linear-gradient(180deg, #fbf8f3 0%, #f5eee5 52%, #efe6db 100%);
+  background: var(--page-bg);
 }
 
 body {
   margin: 0;
   font-family: "Montserrat", sans-serif;
   color: var(--text);
-  background: transparent;
+  background: var(--bg);
 }
 
 button,
@@ -54,7 +91,7 @@ textarea {
   width: 100%;
   border-radius: 18px;
   border: 1px solid var(--line-strong);
-  background: rgba(255, 250, 243, 0.9);
+  background: var(--field-bg);
   color: var(--text);
   padding: 0.95rem 1rem;
   outline: none;
@@ -65,12 +102,12 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: rgba(159, 137, 114, 0.45);
-  background: rgba(255, 253, 249, 0.98);
+  background: var(--field-bg-focus);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: rgba(144, 168, 191, 0.75);
+  color: var(--field-placeholder);
 }
 
 .shell {
@@ -89,10 +126,147 @@ textarea::placeholder {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 15% 18%, rgba(255, 255, 255, 0.5), transparent 18%),
-    radial-gradient(circle at 82% 12%, rgba(228, 211, 194, 0.38), transparent 20%);
+  background: var(--shell-overlay);
   opacity: 0.6;
+}
+
+[data-theme="dark"] .preview-card,
+[data-theme="dark"] .progress-card,
+[data-theme="dark"] .slide-callout,
+[data-theme="dark"] .cover-highlight,
+[data-theme="dark"] .tutorial-guide-card,
+[data-theme="dark"] .tutorial-success-banner,
+[data-theme="dark"] .market-rail-card,
+[data-theme="dark"] .trade-box,
+[data-theme="dark"] .settlement-box,
+[data-theme="dark"] .compact-form,
+[data-theme="dark"] .compact-metric,
+[data-theme="dark"] .member-management-row,
+[data-theme="dark"] .group-pill,
+[data-theme="dark"] .member-card {
+  background: rgba(68, 68, 78, 0.9);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+[data-theme="dark"] .group-pill.active,
+[data-theme="dark"] .progress-card.active,
+[data-theme="dark"] .progress-card.complete {
+  background: linear-gradient(145deg, rgba(93, 159, 150, 0.34), rgba(68, 68, 78, 0.96));
+  border-color: rgba(147, 162, 160, 0.36);
+}
+
+[data-theme="dark"] .kicker,
+[data-theme="dark"] .preview-label,
+[data-theme="dark"] .metric-label,
+[data-theme="dark"] .market-stats span,
+[data-theme="dark"] .market-rail-card span {
+  color: #93a2a0;
+}
+
+[data-theme="dark"] .panel,
+[data-theme="dark"] .loading-panel,
+[data-theme="dark"] .empty-panel,
+[data-theme="dark"] .status-banner {
+  border-color: rgba(211, 218, 217, 0.2);
+  box-shadow: 0 24px 56px rgba(18, 18, 24, 0.42);
+}
+
+[data-theme="dark"] .primary-button {
+  color: #f3f8f7;
+  background: linear-gradient(135deg, #5d9f96, #82ad75);
+  box-shadow: 0 10px 24px rgba(22, 21, 28, 0.26);
+}
+
+[data-theme="dark"] .secondary-button {
+  color: var(--text);
+  background: rgba(211, 218, 217, 0.14);
+  border-color: rgba(211, 218, 217, 0.34);
+}
+
+[data-theme="dark"] .toolbar-button {
+  color: var(--text);
+  background: rgba(211, 218, 217, 0.12);
+  border-color: rgba(211, 218, 217, 0.2);
+}
+
+[data-theme="dark"] .yes-outline,
+[data-theme="dark"] .no-outline {
+  color: var(--text);
+  border-color: rgba(211, 218, 217, 0.32);
+}
+
+[data-theme="dark"] .status-banner strong {
+  color: #d3dad9;
+}
+
+[data-theme="dark"] .settings-backdrop {
+  background: rgba(18, 18, 24, 0.62);
+}
+
+[data-theme="dark"] .settings-modal {
+  background: rgba(56, 56, 66, 0.98);
+}
+
+[data-theme="dark"] .settings-modal-heading {
+  background: rgba(56, 56, 66, 0.98);
+  border-bottom-color: rgba(211, 218, 217, 0.16);
+}
+
+[data-theme="dark"] .status-pill.open {
+  color: #b7d0cb;
+  background: rgba(147, 162, 160, 0.2);
+}
+
+[data-theme="dark"] .status-pill.closed {
+  color: #d3dad9;
+  background: rgba(93, 159, 150, 0.16);
+}
+
+[data-theme="dark"] .status-pill.resolved {
+  color: #c6d8d5;
+  background: rgba(147, 162, 160, 0.16);
+}
+
+[data-theme="dark"] .market-stats div {
+  background: rgba(47, 46, 53, 0.72);
+  border-color: rgba(211, 218, 217, 0.16);
+}
+
+[data-theme="dark"] .trade-note {
+  color: rgba(211, 218, 217, 0.88);
+}
+
+[data-theme="dark"] .pending-note {
+  color: #b8c8c6;
+}
+
+[data-theme="dark"] .venmo-link {
+  color: #9cb4b0;
+  border-bottom-color: rgba(156, 180, 176, 0.46);
+}
+
+[data-theme="dark"] .venmo-link:hover {
+  color: #d3dad9;
+  border-bottom-color: rgba(211, 218, 217, 0.68);
+}
+
+[data-theme="dark"] .toggle-button.active-yes {
+  background: var(--accent-soft);
+  border-color: rgba(147, 162, 160, 0.46);
+  color: #c6d8d5;
+}
+
+[data-theme="dark"] .toggle-button.active-no {
+  background: var(--accent-warm-soft);
+  border-color: rgba(93, 159, 150, 0.42);
+  color: #c6d8d5;
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: rgba(147, 162, 160, 0.52);
 }
 
 .loading-panel,
@@ -553,9 +727,9 @@ textarea::placeholder {
 }
 
 .primary-button {
-  color: #fffaf5;
-  background: linear-gradient(135deg, #b49a7f, #a98a6f);
-  box-shadow: 0 10px 24px rgba(126, 103, 78, 0.14);
+  color: #f8fffd;
+  background: linear-gradient(135deg, #4f8f85, #6d9f6b);
+  box-shadow: 0 10px 24px rgba(79, 143, 133, 0.18);
 }
 
 .secondary-button {
@@ -755,11 +929,19 @@ textarea::placeholder {
 
 .group-selector.vertical {
   display: grid;
+  gap: 0.7rem;
 }
 
 .group-selector .group-pill {
   min-width: 180px;
   max-width: 240px;
+}
+
+.family-manager-modal .group-selector.vertical .group-pill {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  border-radius: 22px;
 }
 
 .family-strip-meta {
@@ -783,7 +965,8 @@ textarea::placeholder {
 }
 
 .invite-link-copy {
-  margin: 0;
+  margin: 0 0 0.35rem;
+  line-height: 1.45;
   word-break: break-word;
 }
 
@@ -814,7 +997,7 @@ textarea::placeholder {
 .family-manager-grid,
 .family-manager-column {
   display: grid;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .family-manager-grid {
@@ -823,7 +1006,9 @@ textarea::placeholder {
 }
 
 .family-summary-card {
-  gap: 0.75rem;
+  display: grid;
+  gap: 1rem;
+  min-height: 170px;
 }
 
 .family-summary-card p {
@@ -831,17 +1016,28 @@ textarea::placeholder {
 }
 
 .member-management-row {
-  padding: 0.85rem 0.95rem;
-  border-radius: 18px;
+  padding: 1rem;
+  border-radius: 22px;
   background: rgba(255, 252, 248, 0.92);
   border: 1px solid rgba(126, 111, 93, 0.08);
 }
 
 .compact-form {
+  display: grid;
+  gap: 0.9rem;
   padding: 1rem;
   border-radius: 24px;
   background: rgba(251, 246, 240, 0.88);
   border: 1px solid rgba(126, 111, 93, 0.1);
+}
+
+.family-manager-modal .compact-form {
+  min-height: 150px;
+  align-content: start;
+}
+
+.family-manager-modal .form-stack.compact-form {
+  min-height: 170px;
 }
 
 .member-grid {
@@ -1151,6 +1347,7 @@ button:disabled {
 
   .family-manager-grid {
     grid-template-columns: 1fr;
+    gap: 1.35rem;
   }
 
   .slideshow-stage,
