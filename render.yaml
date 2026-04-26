@@ -5,6 +5,7 @@ services:
     rootDir: apps/api
     buildCommand: npm install && npm run prisma:generate && npm run build
     startCommand: npm run start
+    healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: DATABASE_URL

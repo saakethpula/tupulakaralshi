@@ -807,6 +807,36 @@ textarea::placeholder {
   width: 100%;
 }
 
+.family-manager-modal {
+  width: min(1080px, calc(100vw - 2.5rem));
+}
+
+.family-manager-grid,
+.family-manager-column {
+  display: grid;
+  gap: 1rem;
+}
+
+.family-manager-grid {
+  grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.05fr);
+  align-items: start;
+}
+
+.family-summary-card {
+  gap: 0.75rem;
+}
+
+.family-summary-card p {
+  margin: 0;
+}
+
+.member-management-row {
+  padding: 0.85rem 0.95rem;
+  border-radius: 18px;
+  background: rgba(255, 252, 248, 0.92);
+  border: 1px solid rgba(126, 111, 93, 0.08);
+}
+
 .compact-form {
   padding: 1rem;
   border-radius: 24px;
@@ -1111,8 +1141,16 @@ button:disabled {
     padding: 1.15rem;
   }
 
+  .family-manager-modal {
+    width: min(100vw - 1.25rem, 1080px);
+  }
+
   .settings-modal-heading {
     align-items: stretch;
+  }
+
+  .family-manager-grid {
+    grid-template-columns: 1fr;
   }
 
   .slideshow-stage,

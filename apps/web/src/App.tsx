@@ -145,6 +145,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [busyAction, setBusyAction] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [familyManagerOpen, setFamilyManagerOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [groupSetupMode, setGroupSetupMode] = useState<"join" | "create">("join");
@@ -293,6 +294,11 @@ export default function App() {
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Failed to copy invite link.");
     }
+  }
+
+  function openFamilyManager() {
+    setSettingsOpen(false);
+    setFamilyManagerOpen(true);
   }
 
   useEffect(() => {
@@ -1383,7 +1389,7 @@ export default function App() {
             <div className="panel-heading settings-modal-heading">
               <div>
                 <p className="kicker">Settings</p>
-                <h2>Groups and payments</h2>
+                <h2>Personal settings</h2>
               </div>
               <button
                 className="toolbar-button toolbar-button-secondary"
@@ -1411,65 +1417,20 @@ export default function App() {
                 </button>
               </form>
 
-              <form onSubmit={handleCreateGroup} className="form-stack compact-form">
-                <span className="subtle-copy">Create a new family group</span>
-                <input
-                  value={groupName}
-                  onChange={(event) => setGroupName(event.target.value)}
-                  placeholder="The Parkers"
-                  required
-                />
-                <button className="primary-button" type="submit" disabled={busyAction === "create-group"}>
-                  Create group
+              <div className="form-stack compact-form">
+                <span className="subtle-copy">Family groups</span>
+                <strong>{selectedGroup ? selectedGroup.name : "No family selected"}</strong>
+                <p className="subtle-copy">
+                  Create groups, switch families, invite people, and manage members in a separate popup.
+                </p>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={openFamilyManager}
+                >
+                  Manage family
                 </button>
-              </form>
-
-              <form onSubmit={handleJoinGroup} className="form-stack compact-form">
-                <span className="subtle-copy">
-                  {referralJoinCode ? "Invite link detected for this group" : "Join another family group"}
-                </span>
-                <input
-                  value={joinCode}
-                  onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-                  placeholder="Join code"
-                  required
-                />
-                <button className="ghost-button" type="submit" disabled={busyAction === "join-group"}>
-                  Join group
-                </button>
-              </form>
-
-              {selectedGroup && selectedGroup.role === "ADMIN" ? (
-                <div className="form-stack compact-form">
-                  <span className="subtle-copy">Manage {selectedGroup.name}</span>
-                  {selectedGroup.members
-                    .filter((member) => member.id !== profile.user.id)
-                    .map((member) => (
-                      <div key={member.id} className="member-card">
-                        <div>
-                          <strong>{member.displayName}</strong>
-                          <span>{member.role}</span>
-                        </div>
-                        <button
-                          className="ghost-button"
-                          type="button"
-                          disabled={busyAction === `remove-member-${member.id}`}
-                          onClick={() => void handleRemoveGroupMember(selectedGroup.id, member.id, member.displayName)}
-                        >
-                          Kick member
-                        </button>
-                      </div>
-                    ))}
-                  <button
-                    className="toolbar-button toolbar-button-secondary"
-                    type="button"
-                    disabled={busyAction === `delete-group-${selectedGroup.id}`}
-                    onClick={() => void handleDeleteGroup(selectedGroup.id, selectedGroup.name)}
-                  >
-                    Delete group
-                  </button>
-                </div>
-              ) : null}
+              </div>
 
               <div className="form-stack compact-form">
                 <span className="subtle-copy">Tutorial status</span>
@@ -1490,6 +1451,151 @@ export default function App() {
         </section>
       ) : null}
 
+      {familyManagerOpen ? (
+        <section className="settings-overlay" aria-label="Manage family">
+          <button
+            className="settings-backdrop"
+            type="button"
+            aria-label="Close family manager"
+            onClick={() => setFamilyManagerOpen(false)}
+          />
+          <article className="panel settings-panel settings-modal family-manager-modal">
+            <div className="panel-heading settings-modal-heading">
+              <div>
+                <p className="kicker">Family manager</p>
+                <h2>{selectedGroup?.name ?? "Manage your families"}</h2>
+              </div>
+              <button
+                className="toolbar-button toolbar-button-secondary"
+                type="button"
+                onClick={() => setFamilyManagerOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="family-manager-grid">
+              <div className="family-manager-column">
+                <div className="compact-form family-summary-card">
+                  <span className="subtle-copy">Current family</span>
+                  <strong>{selectedGroup?.name ?? "Choose a family group"}</strong>
+                  <p className="subtle-copy">
+                    {selectedGroup
+                      ? `Join code ${selectedGroup.joinCode}`
+                      : "Create a group or join one with a code."}
+                  </p>
+                  <div className="family-strip-meta">
+                    <div className="compact-metric">
+                      <span className="metric-label">Members</span>
+                      <strong>{selectedGroup?.members.length ?? 0}</strong>
+                    </div>
+                    <div className="compact-metric">
+                      <span className="metric-label">Visible markets</span>
+                      <strong>{markets.length}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="compact-form">
+                  <span className="subtle-copy">Switch family</span>
+                  <div className="group-selector vertical">
+                    {profile?.groups.map((group) => (
+                      <button
+                        key={group.id}
+                        type="button"
+                        className={selectedGroupId === group.id ? "group-pill active" : "group-pill"}
+                        onClick={() => setSelectedGroupId(group.id)}
+                      >
+                        <span>{group.name}</span>
+                        <strong>{group.role}</strong>
+                        <small>{group.joinCode}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="family-manager-column">
+                <form onSubmit={handleCreateGroup} className="form-stack compact-form">
+                  <span className="subtle-copy">Create a new family group</span>
+                  <input
+                    value={groupName}
+                    onChange={(event) => setGroupName(event.target.value)}
+                    placeholder="The Parkers"
+                    required
+                  />
+                  <button className="primary-button" type="submit" disabled={busyAction === "create-group"}>
+                    Create group
+                  </button>
+                </form>
+
+                <form onSubmit={handleJoinGroup} className="form-stack compact-form">
+                  <span className="subtle-copy">
+                    {referralJoinCode ? "Invite link detected for this group" : "Join another family group"}
+                  </span>
+                  <input
+                    value={joinCode}
+                    onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+                    placeholder="Join code"
+                    required
+                  />
+                  <button className="ghost-button" type="submit" disabled={busyAction === "join-group"}>
+                    Join group
+                  </button>
+                </form>
+
+                {selectedGroup ? (
+                  <div className="compact-form">
+                    <span className="subtle-copy">Invite people</span>
+                    <strong>Copy the invite link</strong>
+                    <p className="subtle-copy invite-link-copy">{selectedGroupInviteUrl}</p>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() => void copyInviteLink(selectedGroup.joinCode)}
+                    >
+                      Copy invite link
+                    </button>
+                  </div>
+                ) : null}
+
+                {selectedGroup && selectedGroup.role === "ADMIN" ? (
+                  <div className="form-stack compact-form">
+                    <span className="subtle-copy">Manage members</span>
+                    {selectedGroup.members
+                      .filter((member) => member.id !== profile.user.id)
+                      .map((member) => (
+                        <div key={member.id} className="member-card member-management-row">
+                          <div>
+                            <strong>{member.displayName}</strong>
+                            <span>{member.role}</span>
+                          </div>
+                          <button
+                            className="ghost-button"
+                            type="button"
+                            disabled={busyAction === `remove-member-${member.id}`}
+                            onClick={() => void handleRemoveGroupMember(selectedGroup.id, member.id, member.displayName)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    <button
+                      className="toolbar-button toolbar-button-secondary"
+                      type="button"
+                      disabled={busyAction === `delete-group-${selectedGroup.id}`}
+                      onClick={() => void handleDeleteGroup(selectedGroup.id, selectedGroup.name)}
+                    >
+                      Delete family
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </article>
+        </section>
+      ) : null}
+
       <section className="dashboard-grid">
         <aside className="sidebar-stack">
           <article className="panel family-strip family-panel">
@@ -1498,23 +1604,9 @@ export default function App() {
                 <p className="kicker">Current family</p>
                 <h2>{selectedGroup?.name ?? "Choose a family group"}</h2>
               </div>
-              <span className="subtle-copy">
-                {selectedGroup ? `Join code ${selectedGroup.joinCode}` : "Pick a group in settings"}
-              </span>
-            </div>
-            <div className="group-selector vertical">
-              {profile?.groups.map((group) => (
-                <button
-                  key={group.id}
-                  type="button"
-                  className={selectedGroupId === group.id ? "group-pill active" : "group-pill"}
-                  onClick={() => setSelectedGroupId(group.id)}
-                >
-                  <span>{group.name}</span>
-                  <strong>{group.role}</strong>
-                  <small>{group.joinCode}</small>
-                </button>
-              ))}
+              <button className="toolbar-button toolbar-button-secondary" type="button" onClick={openFamilyManager}>
+                Manage family
+              </button>
             </div>
             <div className="family-strip-meta">
               <div className="compact-metric">
@@ -1526,22 +1618,15 @@ export default function App() {
                 <strong>{markets.length}</strong>
               </div>
             </div>
-            {selectedGroup ? (
-              <div className="invite-card">
-                <div>
-                  <p className="kicker">Share link</p>
-                  <strong>Invite people with one tap instead of sending just the code.</strong>
-                </div>
-                <p className="subtle-copy invite-link-copy">{selectedGroupInviteUrl}</p>
-                <button
-                  className="ghost-button"
-                  type="button"
-                  onClick={() => void copyInviteLink(selectedGroup.joinCode)}
-                >
-                  Copy invite link
-                </button>
-              </div>
-            ) : null}
+            <div className="compact-form family-summary-card">
+              <span className="subtle-copy">Family summary</span>
+              <strong>{selectedGroup?.role ?? "No active role"}</strong>
+              <p className="subtle-copy">
+                {selectedGroup
+                  ? `Join code ${selectedGroup.joinCode}. Use Manage family for switching groups, invites, and member controls.`
+                  : "Open Manage family to create or join your first group."}
+              </p>
+            </div>
           </article>
 
           <article className="panel leaderboard-panel">
