@@ -1,7 +1,7 @@
 import type { CurrentUserResponse, Market } from "../../lib/api";
 import type { TradeDraft } from "../../types/app";
 import { formatMoney } from "../../utils/format";
-import { getVenmoUrl, normalizeVenmoHandle } from "../../utils/venmo";
+import { getVenmoPaymentUrl, normalizeVenmoHandle } from "../../utils/venmo";
 
 type MarketCardProps = {
     market: Market;
@@ -39,8 +39,6 @@ export function MarketCard({
     onRespondToPayout
 }: MarketCardProps) {
     const canRemove = market.createdBy.id === profile.user.id || selectedGroupRole === "ADMIN";
-    const recipientHandle = normalizeVenmoHandle(market.venmoRecipient.venmoHandle);
-    const recipientUrl = getVenmoUrl(market.venmoRecipient.venmoHandle);
     const resolutionOutcome = market.outcomes.find((outcome) => outcome.id === market.resolutionOutcomeId);
     const resolutionLabel = resolutionOutcome?.label ?? (market.resolution ? "YES" : "NO");
     const canConfirmResolution =
@@ -51,9 +49,9 @@ export function MarketCard({
     const draftAmount = Number(draft.amount || "0");
     const topUpAmount = Math.max(0, draftAmount - existingUserTotal);
     const isAboveMaxBet = draftAmount > maxBet;
-    const renderVenmoLink = (handle: string | null | undefined, fallback: string) => {
+    const renderVenmoLink = (handle: string | null | undefined, fallback: string, amount?: number) => {
         const normalizedHandle = normalizeVenmoHandle(handle);
-        const venmoUrl = getVenmoUrl(handle);
+        const venmoUrl = getVenmoPaymentUrl(handle, amount, `Payment for ${market.question}`);
 
         return venmoUrl ? (
             <a className="venmo-link" href={venmoUrl} target="_blank" rel="noreferrer">
@@ -147,7 +145,7 @@ export function MarketCard({
                         ) : (
                             <>
                                 After saving, send {formatMoney(topUpAmount)} to{" "}
-                                {recipientUrl ? renderVenmoLink(market.venmoRecipient.venmoHandle, market.venmoRecipient.displayName) : market.venmoRecipient.displayName}{" "}
+                                {renderVenmoLink(market.venmoRecipient.venmoHandle, market.venmoRecipient.displayName, topUpAmount)}{" "}
                                 so the market creator can escrow the pool.
                             </>
                         )}
@@ -156,7 +154,7 @@ export function MarketCard({
                 {market.userPendingPosition.totalAmount > 0 ? (
                     <p className="trade-note pending-note">
                         Pending confirmation: {formatMoney(market.userPendingPosition.totalAmount)}. This will not affect the market until{" "}
-                        {recipientUrl ? renderVenmoLink(market.venmoRecipient.venmoHandle, market.venmoRecipient.displayName) : market.venmoRecipient.displayName}{" "}
+                        {renderVenmoLink(market.venmoRecipient.venmoHandle, market.venmoRecipient.displayName, market.userPendingPosition.totalAmount)}{" "}
                         confirms receipt.
                     </p>
                 ) : null}
@@ -261,7 +259,7 @@ export function MarketCard({
                             {market.payoutConfirmations.map((payout) => (
                                 <div key={payout.id} className="settlement-row">
                                     <div>
-                                        <span>{renderVenmoLink(payout.venmoHandle, payout.displayName)}</span>
+                                        <span>{renderVenmoLink(payout.venmoHandle, payout.displayName, payout.amount)}</span>
                                         <small>{formatMoney(payout.amount)} · {payout.status.replaceAll("_", " ")}</small>
                                     </div>
                                     <div className="market-footer-actions">
