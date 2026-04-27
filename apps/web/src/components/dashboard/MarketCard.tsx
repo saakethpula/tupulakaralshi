@@ -14,6 +14,7 @@ type MarketCardProps = {
     onConfirmPosition: (marketId: string, positionId: string) => Promise<void>;
     onRejectPosition: (marketId: string, positionId: string) => Promise<void>;
     onResolveMarket: (marketId: string, resolution: boolean) => Promise<void>;
+    onConfirmMarketResolution: (marketId: string) => Promise<void>;
     onDeleteMarket: (marketId: string) => Promise<void>;
     onMarkPayoutSent: (marketId: string, payoutId: string) => Promise<void>;
     onRespondToPayout: (marketId: string, payoutId: string, received: boolean) => Promise<void>;
@@ -30,6 +31,7 @@ export function MarketCard({
     onConfirmPosition,
     onRejectPosition,
     onResolveMarket,
+    onConfirmMarketResolution,
     onDeleteMarket,
     onMarkPayoutSent,
     onRespondToPayout
@@ -37,6 +39,11 @@ export function MarketCard({
     const canRemove = market.createdBy.id === profile.user.id || selectedGroupRole === "ADMIN";
     const recipientHandle = normalizeVenmoHandle(market.venmoRecipient.venmoHandle);
     const recipientUrl = getVenmoUrl(market.venmoRecipient.venmoHandle);
+    const resolutionSide = market.resolution ? "YES" : "NO";
+    const canConfirmResolution =
+        market.status === "PENDING_RESOLUTION" &&
+        market.resolutionProposedBy?.id !== profile.user.id &&
+        !market.userResolutionConfirmation;
 
     return (
         <article className="market-panel">
@@ -47,7 +54,7 @@ export function MarketCard({
                     </p>
                     <h3>{market.question}</h3>
                 </div>
-                <span className={`status-pill ${market.status.toLowerCase()}`}>{market.status}</span>
+                <span className={`status-pill ${market.status.toLowerCase()}`}>{market.status.replaceAll("_", " ")}</span>
             </div>
 
             {market.description ? <p className="market-copy">{market.description}</p> : null}
@@ -185,6 +192,47 @@ export function MarketCard({
                 </div>
             ) : null}
 
+            {market.status === "PENDING_RESOLUTION" ? (
+                <div className="settlement-box">
+                    <div className="settlement-heading">
+                        <span className="kicker">Resolution check</span>
+                        <strong>
+                            {market.resolutionProposedBy?.displayName ?? "An admin"} resolved this as {resolutionSide}
+                        </strong>
+                    </div>
+                    <p className="subtle-copy">
+                        {market.resolutionConfirmationCount} of {market.requiredResolutionConfirmations} confirmations recorded.
+                    </p>
+                    {market.resolutionConfirmations.length > 0 ? (
+                        <div className="settlement-list">
+                            {market.resolutionConfirmations.map((confirmation) => (
+                                <div key={confirmation.id} className="settlement-row">
+                                    <div>
+                                        <span>{confirmation.displayName}</span>
+                                        <small>Confirmed resolution</small>
+                                    </div>
+                                    <strong>{resolutionSide}</strong>
+                                </div>
+                            ))}
+                        </div>
+                    ) : null}
+                    {canConfirmResolution ? (
+                        <div className="market-footer-actions">
+                            <button
+                                className="ghost-button yes-outline"
+                                type="button"
+                                disabled={busyAction === `resolution-confirm-${market.id}`}
+                                onClick={() => void onConfirmMarketResolution(market.id)}
+                            >
+                                Confirm {resolutionSide}
+                            </button>
+                        </div>
+                    ) : market.userResolutionConfirmation ? (
+                        <p className="subtle-copy">You confirmed this resolution.</p>
+                    ) : null}
+                </div>
+            ) : null}
+
             {market.status === "RESOLVED" && market.createdBy.id === profile.user.id ? (
                 <div className="settlement-box">
                     <div className="settlement-heading">
@@ -283,7 +331,7 @@ export function MarketCard({
                             Remove market
                         </button>
                     ) : null}
-                    {selectedGroupRole === "ADMIN" && market.status !== "RESOLVED" ? (
+                    {selectedGroupRole === "ADMIN" && (market.status === "OPEN" || market.status === "CLOSED") ? (
                         <>
                             <button
                                 className="ghost-button yes-outline"

@@ -55,6 +55,7 @@ type DashboardScreenProps = {
     onConfirmPosition: (marketId: string, positionId: string) => Promise<void>;
     onRejectPosition: (marketId: string, positionId: string) => Promise<void>;
     onResolve: (marketId: string, resolution: boolean) => Promise<void>;
+    onConfirmMarketResolution: (marketId: string) => Promise<void>;
     onDeleteMarket: (marketId: string) => Promise<void>;
     onMarkPayoutSent: (marketId: string, payoutId: string) => Promise<void>;
     onRespondToPayout: (marketId: string, payoutId: string, received: boolean) => Promise<void>;
@@ -108,6 +109,7 @@ export function DashboardScreen({
     onConfirmPosition,
     onRejectPosition,
     onResolve,
+    onConfirmMarketResolution,
     onDeleteMarket,
     onMarkPayoutSent,
     onRespondToPayout
@@ -320,6 +322,7 @@ export function DashboardScreen({
                                             onConfirmPosition={onConfirmPosition}
                                             onRejectPosition={onRejectPosition}
                                             onResolveMarket={onResolve}
+                                            onConfirmMarketResolution={onConfirmMarketResolution}
                                             onDeleteMarket={onDeleteMarket}
                                             onMarkPayoutSent={onMarkPayoutSent}
                                             onRespondToPayout={onRespondToPayout}

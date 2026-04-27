@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
+    confirmMarketResolution,
     confirmPosition,
     createGroup,
     createMarket,
@@ -765,9 +766,28 @@ export default function App() {
         try {
             await resolveMarket(token, marketId, resolution);
             await refreshWorkspace(token, selectedGroupId);
-            setStatusMessage("Market resolved and win/loss totals updated.");
+            setStatusMessage("Resolution proposed. Three people need to confirm it before settlement runs.");
         } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to resolve market.");
+        } finally {
+            setBusyAction("");
+        }
+    }
+
+    async function handleConfirmMarketResolution(marketId: string) {
+        setError("");
+        setBusyAction(`resolution-confirm-${marketId}`);
+
+        try {
+            const updatedMarket = await confirmMarketResolution(token, marketId);
+            await refreshWorkspace(token, selectedGroupId);
+            setStatusMessage(
+                updatedMarket.status === "RESOLVED"
+                    ? "Resolution confirmed by three people. Settlement is now final."
+                    : "Resolution confirmation recorded."
+            );
+        } catch (requestError) {
+            setError(requestError instanceof Error ? requestError.message : "Failed to confirm resolution.");
         } finally {
             setBusyAction("");
         }
@@ -947,6 +967,7 @@ export default function App() {
             onConfirmPosition={handleConfirmPosition}
             onRejectPosition={handleRejectPosition}
             onResolve={handleResolve}
+            onConfirmMarketResolution={handleConfirmMarketResolution}
             onDeleteMarket={handleDeleteMarket}
             onMarkPayoutSent={handleMarkPayoutSent}
             onRespondToPayout={handleRespondToPayout}

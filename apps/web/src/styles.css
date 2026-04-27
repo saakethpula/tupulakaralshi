@@ -246,6 +246,11 @@ textarea::placeholder {
   background: rgba(93, 159, 150, 0.16);
 }
 
+[data-theme="dark"] .status-pill.pending_resolution {
+  color: #d3dad9;
+  background: rgba(199, 165, 106, 0.18);
+}
+
 [data-theme="dark"] .status-pill.resolved {
   color: #c6d8d5;
   background: rgba(147, 162, 160, 0.16);
@@ -1143,6 +1148,11 @@ textarea::placeholder {
 .status-pill.closed {
   color: #9a7a46;
   background: rgba(199, 165, 106, 0.14);
+}
+
+.status-pill.pending_resolution {
+  color: #9a7a46;
+  background: rgba(199, 165, 106, 0.18);
 }
 
 .status-pill.resolved {

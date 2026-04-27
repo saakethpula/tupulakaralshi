@@ -1,7 +1,7 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { confirmPosition, createGroup, createMarket, deleteGroup, deleteMarket, getCurrentUser, getMarkets, getRealtimeWebSocketUrl, joinGroup, markPayoutSent, removeGroupMember, rejectPosition, respondToPayout, resolveMarket, updateTutorialCompletion, updateVenmoHandle, upsertPosition } from "./lib/api";
+import { confirmMarketResolution, confirmPosition, createGroup, createMarket, deleteGroup, deleteMarket, getCurrentUser, getMarkets, getRealtimeWebSocketUrl, joinGroup, markPayoutSent, removeGroupMember, rejectPosition, respondToPayout, resolveMarket, updateTutorialCompletion, updateVenmoHandle, upsertPosition } from "./lib/api";
 import { DashboardScreen } from "./components/dashboard/DashboardScreen";
 import { LandingScreen } from "./components/LandingScreen";
 import { OnboardingScreen } from "./components/onboarding/OnboardingScreen";
@@ -626,10 +626,27 @@ export default function App() {
         try {
             await resolveMarket(token, marketId, resolution);
             await refreshWorkspace(token, selectedGroupId);
-            setStatusMessage("Market resolved and win/loss totals updated.");
+            setStatusMessage("Resolution proposed. Three people need to confirm it before settlement runs.");
         }
         catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to resolve market.");
+        }
+        finally {
+            setBusyAction("");
+        }
+    }
+    async function handleConfirmMarketResolution(marketId) {
+        setError("");
+        setBusyAction(`resolution-confirm-${marketId}`);
+        try {
+            const updatedMarket = await confirmMarketResolution(token, marketId);
+            await refreshWorkspace(token, selectedGroupId);
+            setStatusMessage(updatedMarket.status === "RESOLVED"
+                ? "Resolution confirmed by three people. Settlement is now final."
+                : "Resolution confirmation recorded.");
+        }
+        catch (requestError) {
+            setError(requestError instanceof Error ? requestError.message : "Failed to confirm resolution.");
         }
         finally {
             setBusyAction("");
@@ -705,5 +722,5 @@ export default function App() {
             logoutParams: {
                 returnTo: window.location.origin
             }
-        }), onSaveVenmoHandle: handleSaveVenmoHandle, onRestartTutorial: handleRestartTutorial, onCreateGroup: handleCreateGroup, onJoinGroup: handleJoinGroup, onCopyInviteLink: copyInviteLink, onRemoveGroupMember: handleRemoveGroupMember, onDeleteGroup: handleDeleteGroup, onCreateMarket: handleCreateMarket, onUpdateTradeDraft: updateTradeDraft, onSavePosition: handleSavePosition, onConfirmPosition: handleConfirmPosition, onRejectPosition: handleRejectPosition, onResolve: handleResolve, onDeleteMarket: handleDeleteMarket, onMarkPayoutSent: handleMarkPayoutSent, onRespondToPayout: handleRespondToPayout }));
+        }), onSaveVenmoHandle: handleSaveVenmoHandle, onRestartTutorial: handleRestartTutorial, onCreateGroup: handleCreateGroup, onJoinGroup: handleJoinGroup, onCopyInviteLink: copyInviteLink, onRemoveGroupMember: handleRemoveGroupMember, onDeleteGroup: handleDeleteGroup, onCreateMarket: handleCreateMarket, onUpdateTradeDraft: updateTradeDraft, onSavePosition: handleSavePosition, onConfirmPosition: handleConfirmPosition, onRejectPosition: handleRejectPosition, onResolve: handleResolve, onConfirmMarketResolution: handleConfirmMarketResolution, onDeleteMarket: handleDeleteMarket, onMarkPayoutSent: handleMarkPayoutSent, onRespondToPayout: handleRespondToPayout }));
 }

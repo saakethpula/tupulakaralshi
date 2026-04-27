@@ -39,8 +39,12 @@ export type Market = {
   description?: string | null;
   closesAt: string;
   resolvesAt?: string | null;
-  status: "OPEN" | "CLOSED" | "RESOLVED";
+  status: "OPEN" | "CLOSED" | "PENDING_RESOLUTION" | "RESOLVED";
   resolution?: boolean | null;
+  resolutionProposedBy?: {
+    id: string;
+    displayName: string;
+  } | null;
   createdBy: {
     id: string;
     displayName: string;
@@ -109,6 +113,20 @@ export type Market = {
     status: "PENDING_CREATOR" | "PENDING_RECIPIENT" | "DISPUTED" | "CONFIRMED";
     creatorMarkedAt?: string | null;
     recipientRespondedAt?: string | null;
+  } | null;
+  resolutionConfirmations: Array<{
+    id: string;
+    userId: string;
+    displayName: string;
+    createdAt: string;
+  }>;
+  resolutionConfirmationCount: number;
+  requiredResolutionConfirmations: number;
+  userResolutionConfirmation: {
+    id: string;
+    userId: string;
+    displayName: string;
+    createdAt: string;
   } | null;
   pendingConfirmations: Array<{
     positionId: string;
@@ -246,6 +264,12 @@ export function resolveMarket(
   return request<Market>(`/api/markets/${marketId}/resolve`, token, {
     method: "POST",
     body: JSON.stringify({ resolution })
+  });
+}
+
+export function confirmMarketResolution(token: string, marketId: string) {
+  return request<Market>(`/api/markets/${marketId}/resolution/confirm`, token, {
+    method: "POST"
   });
 }
 

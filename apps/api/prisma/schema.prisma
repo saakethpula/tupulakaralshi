@@ -15,6 +15,7 @@ enum GroupRole {
 enum MarketStatus {
   OPEN
   CLOSED
+  PENDING_RESOLUTION
   RESOLVED
 }
 
@@ -36,31 +37,33 @@ enum PayoutConfirmationStatus {
 }
 
 model User {
-  id             String          @id @default(cuid())
-  auth0UserId    String          @unique
-  email          String          @unique
-  displayName    String
-  avatarUrl      String?
-  venmoHandle    String?
-  hasCompletedTutorial Boolean   @default(false)
-  balance        Int             @default(0)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  memberships    GroupMembership[]
-  createdMarkets Market[]        @relation("CreatedMarkets")
-  targetMarkets  Market[]        @relation("TargetMarkets")
-  positions      Position[]
-  payouts        MarketPayoutConfirmation[]
+  id                        String                         @id @default(cuid())
+  auth0UserId               String                         @unique
+  email                     String                         @unique
+  displayName               String
+  avatarUrl                 String?
+  venmoHandle               String?
+  hasCompletedTutorial      Boolean                        @default(false)
+  balance                   Int                            @default(0)
+  createdAt                 DateTime                       @default(now())
+  updatedAt                 DateTime                       @updatedAt
+  memberships               GroupMembership[]
+  createdMarkets            Market[]                       @relation("CreatedMarkets")
+  targetMarkets             Market[]                       @relation("TargetMarkets")
+  proposedResolutionMarkets Market[]                       @relation("ProposedResolutionMarkets")
+  positions                 Position[]
+  payouts                   MarketPayoutConfirmation[]
+  resolutionConfirmations   MarketResolutionConfirmation[]
 }
 
 model FamilyGroup {
-  id           String            @id @default(cuid())
-  name         String
-  joinCode     String            @unique
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  memberships  GroupMembership[]
-  markets      Market[]
+  id          String            @id @default(cuid())
+  name        String
+  joinCode    String            @unique
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  memberships GroupMembership[]
+  markets     Market[]
 }
 
 model GroupMembership {
@@ -76,25 +79,29 @@ model GroupMembership {
 }
 
 model Market {
-  id              String       @id @default(cuid())
-  groupId         String
-  createdByUserId String
-  targetUserId    String?
-  question        String
-  description     String?
-  closesAt        DateTime
-  resolvesAt      DateTime?
-  status          MarketStatus @default(OPEN)
-  resolution      Boolean?
-  liquidityPool   Int          @default(100)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  payoutsFinalizedAt DateTime?
-  group           FamilyGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  createdBy       User         @relation("CreatedMarkets", fields: [createdByUserId], references: [id], onDelete: Cascade)
-  targetUser      User?        @relation("TargetMarkets", fields: [targetUserId], references: [id], onDelete: Cascade)
-  positions       Position[]
-  payoutConfirmations MarketPayoutConfirmation[]
+  id                         String                         @id @default(cuid())
+  groupId                    String
+  createdByUserId            String
+  targetUserId               String?
+  question                   String
+  description                String?
+  closesAt                   DateTime
+  resolvesAt                 DateTime?
+  status                     MarketStatus                   @default(OPEN)
+  resolution                 Boolean?
+  resolutionProposedByUserId String?
+  resolutionProposedAt       DateTime?
+  liquidityPool              Int                            @default(100)
+  createdAt                  DateTime                       @default(now())
+  updatedAt                  DateTime                       @updatedAt
+  payoutsFinalizedAt         DateTime?
+  group                      FamilyGroup                    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy                  User                           @relation("CreatedMarkets", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  targetUser                 User?                          @relation("TargetMarkets", fields: [targetUserId], references: [id], onDelete: Cascade)
+  resolutionProposedBy       User?                          @relation("ProposedResolutionMarkets", fields: [resolutionProposedByUserId], references: [id], onDelete: SetNull)
+  positions                  Position[]
+  payoutConfirmations        MarketPayoutConfirmation[]
+  resolutionConfirmations    MarketResolutionConfirmation[]
 }
 
 model Position {
@@ -114,19 +121,32 @@ model Position {
 }
 
 model MarketPayoutConfirmation {
-  id              String                   @id @default(cuid())
-  marketId        String
-  recipientUserId String
-  amount          Int
-  status          PayoutConfirmationStatus @default(PENDING_CREATOR)
-  creatorMarkedAt DateTime?
+  id                   String                   @id @default(cuid())
+  marketId             String
+  recipientUserId      String
+  amount               Int
+  status               PayoutConfirmationStatus @default(PENDING_CREATOR)
+  creatorMarkedAt      DateTime?
   recipientRespondedAt DateTime?
-  createdAt       DateTime                 @default(now())
-  updatedAt       DateTime                 @updatedAt
-  market          Market                   @relation(fields: [marketId], references: [id], onDelete: Cascade)
-  recipient       User                     @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  market               Market                   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  recipient            User                     @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
 
   @@unique([marketId, recipientUserId])
   @@index([marketId])
   @@index([recipientUserId])
+}
+
+model MarketResolutionConfirmation {
+  id        String   @id @default(cuid())
+  marketId  String
+  userId    String
+  createdAt DateTime @default(now())
+  market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([marketId, userId])
+  @@index([marketId])
+  @@index([userId])
 }

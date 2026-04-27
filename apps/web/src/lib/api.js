@@ -86,6 +86,11 @@ export function resolveMarket(token, marketId, resolution) {
         body: JSON.stringify({ resolution })
     });
 }
+export function confirmMarketResolution(token, marketId) {
+    return request(`/api/markets/${marketId}/resolution/confirm`, token, {
+        method: "POST"
+    });
+}
 export function confirmPosition(token, marketId, positionId) {
     return request(`/api/markets/${marketId}/positions/${positionId}/confirm`, token, {
         method: "POST"
