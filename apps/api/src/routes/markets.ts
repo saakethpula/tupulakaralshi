@@ -102,6 +102,7 @@ type SerializableMarket = {
     user?: {
       id: string;
       displayName: string;
+      venmoHandle: string | null;
     };
   }>;
   outcomes: Array<{
@@ -152,7 +153,8 @@ const detailedMarketInclude = {
       user: {
         select: {
           id: true,
-          displayName: true
+          displayName: true,
+          venmoHandle: true
         }
       }
     }
@@ -162,7 +164,8 @@ const detailedMarketInclude = {
       recipient: {
         select: {
           id: true,
-          displayName: true
+          displayName: true,
+          venmoHandle: true
         }
       }
     }
@@ -301,6 +304,24 @@ function serializeMarket(market: SerializableMarket, currentUserId: string) {
       };
     })
     .sort((left, right) => right.amount - left.amount);
+  const creatorCollections = [...new Map(
+    confirmedPositions
+      .filter((position) => position.userId !== market.createdByUserId)
+      .map((position) => [position.userId, {
+        userId: position.userId,
+        displayName: position.user?.displayName ?? "Family member",
+        venmoHandle: position.user?.venmoHandle ?? null,
+        amount: 0
+      }])
+  ).values()]
+    .map((entry) => ({
+      ...entry,
+      amount: confirmedPositions
+        .filter((position) => position.userId === entry.userId)
+        .reduce((total, position) => total + position.amount, 0)
+    }))
+    .filter((entry) => entry.amount > 0)
+    .sort((left, right) => right.amount - left.amount);
   const pendingConfirmations = pendingPositions
     .map((position) => ({
       positionId: position.id,
@@ -354,6 +375,7 @@ function serializeMarket(market: SerializableMarket, currentUserId: string) {
       venmoHandle: market.createdBy.venmoHandle ?? null
     },
     creatorPayouts,
+    creatorCollections,
     payoutConfirmations,
     creatorPayoutsPendingCount,
     userPayoutConfirmation,
@@ -570,7 +592,8 @@ marketsRouter.put("/:marketId/position", asyncHandler(async (req, res) => {
           userId: currentUser.id,
           side: requestedOutcome.label.toUpperCase() === "YES" ? PositionSide.YES : requestedOutcome.label.toUpperCase() === "NO" ? PositionSide.NO : null,
           outcomeId: requestedOutcome.id,
-          status: PositionStatus.PENDING,
+          status: PositionStatus.CONFIRMED,
+          confirmedAt: new Date(),
           amount: amountToAdd
         }
       });

@@ -59,8 +59,6 @@ type DashboardScreenProps = {
     onCreateMarket: (event: FormEvent<HTMLFormElement>) => Promise<void>;
     onUpdateTradeDraft: (marketId: string, patch: Partial<TradeDraft>) => void;
     onSavePosition: (marketId: string) => Promise<void>;
-    onConfirmPosition: (marketId: string, positionId: string) => Promise<void>;
-    onRejectPosition: (marketId: string, positionId: string) => Promise<void>;
     onResolve: (marketId: string, outcomeId: string) => Promise<void>;
     onConfirmMarketResolution: (marketId: string) => Promise<void>;
     onDeleteMarket: (marketId: string) => Promise<void>;
@@ -120,8 +118,6 @@ export function DashboardScreen({
     onCreateMarket,
     onUpdateTradeDraft,
     onSavePosition,
-    onConfirmPosition,
-    onRejectPosition,
     onResolve,
     onConfirmMarketResolution,
     onDeleteMarket,
@@ -403,8 +399,6 @@ export function DashboardScreen({
                                         }}
                                         onUpdateTradeDraft={onUpdateTradeDraft}
                                         onSavePosition={onSavePosition}
-                                        onConfirmPosition={onConfirmPosition}
-                                        onRejectPosition={onRejectPosition}
                                         onResolveMarket={onResolve}
                                         onConfirmMarketResolution={onConfirmMarketResolution}
                                         onDeleteMarket={onDeleteMarket}

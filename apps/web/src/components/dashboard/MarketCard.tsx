@@ -13,8 +13,6 @@ type MarketCardProps = {
     draft: TradeDraft;
     onUpdateTradeDraft: (marketId: string, patch: Partial<TradeDraft>) => void;
     onSavePosition: (marketId: string) => Promise<void>;
-    onConfirmPosition: (marketId: string, positionId: string) => Promise<void>;
-    onRejectPosition: (marketId: string, positionId: string) => Promise<void>;
     onResolveMarket: (marketId: string, outcomeId: string) => Promise<void>;
     onConfirmMarketResolution: (marketId: string) => Promise<void>;
     onDeleteMarket: (marketId: string) => Promise<void>;
@@ -165,8 +163,6 @@ export function MarketCard({
     draft,
     onUpdateTradeDraft,
     onSavePosition,
-    onConfirmPosition,
-    onRejectPosition,
     onResolveMarket,
     onConfirmMarketResolution,
     onDeleteMarket,
@@ -301,55 +297,29 @@ export function MarketCard({
                             <>The maximum per market is {formatMoney(maxBet)}.</>
                         ) : (
                             <>
-                                After saving, send {formatMoney(topUpAmount)} to{" "}
+                                Your stake is live immediately. You can optionally send {formatMoney(topUpAmount)} to{" "}
                                 {renderVenmoLink(market.venmoRecipient.venmoHandle, market.venmoRecipient.displayName, topUpAmount)}{" "}
-                                so the market creator can escrow the pool.
+                                on good faith to settle with the market creator.
                             </>
                         )}
                     </p>
                 ) : null}
-                {market.userPendingPosition.totalAmount > 0 ? (
-                    <p className="trade-note pending-note">
-                        Pending confirmation: {formatMoney(market.userPendingPosition.totalAmount)}. This will not affect the market until{" "}
-                        {renderVenmoLink(market.venmoRecipient.venmoHandle, market.venmoRecipient.displayName, market.userPendingPosition.totalAmount)}{" "}
-                        confirms receipt.
-                    </p>
-                ) : null}
             </div>
 
-            {market.pendingConfirmations.length > 0 && market.createdBy.id === profile.user.id ? (
+            {market.createdBy.id === profile.user.id && market.creatorCollections.length > 0 ? (
                 <div className="settlement-box">
                     <div className="settlement-heading">
-                        <span className="kicker">Pending receipts</span>
-                        <strong>Confirm Venmo before the stake goes live</strong>
+                        <span className="kicker">Collection sheet</span>
+                        <strong>People who currently owe you for this market</strong>
                     </div>
                     <div className="settlement-list">
-                        {market.pendingConfirmations.map((pending) => (
-                            <div key={pending.positionId} className="settlement-row pending-row">
+                        {market.creatorCollections.map((entry) => (
+                            <div key={entry.userId} className="settlement-row">
                                 <div>
-                                    <span>{pending.displayName}</span>
-                                    <small>
-                                        {pending.outcomeLabel} for {formatMoney(pending.amount)}
-                                    </small>
+                                    <span>{renderVenmoLink(entry.venmoHandle, entry.displayName, entry.amount)}</span>
+                                    <small>{formatMoney(entry.amount)} total stake</small>
                                 </div>
-                                <div className="market-footer-actions">
-                                    <button
-                                        className="ghost-button yes-outline"
-                                        type="button"
-                                        disabled={busyAction === `confirm-${pending.positionId}`}
-                                        onClick={() => void onConfirmPosition(market.id, pending.positionId)}
-                                    >
-                                        Confirm payment
-                                    </button>
-                                    <button
-                                        className="ghost-button no-outline"
-                                        type="button"
-                                        disabled={busyAction === `reject-${pending.positionId}`}
-                                        onClick={() => void onRejectPosition(market.id, pending.positionId)}
-                                    >
-                                        Reject
-                                    </button>
-                                </div>
+                                <strong>{formatMoney(entry.amount)}</strong>
                             </div>
                         ))}
                     </div>

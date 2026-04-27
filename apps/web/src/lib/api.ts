@@ -134,6 +134,12 @@ export type Market = {
     displayName: string;
     amount: number;
   }>;
+  creatorCollections: Array<{
+    userId: string;
+    displayName: string;
+    venmoHandle?: string | null;
+    amount: number;
+  }>;
   payoutConfirmations: Array<{
     id: string;
     recipientUserId: string;

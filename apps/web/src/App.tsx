@@ -2,7 +2,6 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
     confirmMarketResolution,
-    confirmPosition,
     createGroup,
     createMarket,
     deleteGroup,
@@ -13,7 +12,6 @@ import {
     joinGroup,
     markPayoutSent,
     removeGroupMember,
-    rejectPosition,
     respondToPayout,
     resolveMarket,
     updateGroupBetLimits,
@@ -770,41 +768,11 @@ export default function App() {
             await refreshWorkspace(token, selectedGroupId);
             setStatusMessage(
                 topUpAmount > 0
-                    ? `Position submitted. Send ${formatMoney(topUpAmount)} using the Venmo link for ${updatedMarket.venmoRecipient.venmoHandle ? `@${normalizeVenmoHandle(updatedMarket.venmoRecipient.venmoHandle)}` : updatedMarket.venmoRecipient.displayName}, then wait for creator confirmation.`
+                    ? `Position is live. Optionally send ${formatMoney(topUpAmount)} using the Venmo link for ${updatedMarket.venmoRecipient.venmoHandle ? `@${normalizeVenmoHandle(updatedMarket.venmoRecipient.venmoHandle)}` : updatedMarket.venmoRecipient.displayName} so the market stays settled on good faith.`
                     : "Enter a larger amount to add to this position."
             );
         } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to save position.");
-        } finally {
-            setBusyAction("");
-        }
-    }
-
-    async function handleConfirmPosition(marketId: string, positionId: string) {
-        setError("");
-        setBusyAction(`confirm-${positionId}`);
-
-        try {
-            await confirmPosition(token, marketId, positionId);
-            await refreshWorkspace(token, selectedGroupId);
-            setStatusMessage("Payment confirmed. The position is now live on the market.");
-        } catch (requestError) {
-            setError(requestError instanceof Error ? requestError.message : "Failed to confirm payment.");
-        } finally {
-            setBusyAction("");
-        }
-    }
-
-    async function handleRejectPosition(marketId: string, positionId: string) {
-        setError("");
-        setBusyAction(`reject-${positionId}`);
-
-        try {
-            await rejectPosition(token, marketId, positionId);
-            await refreshWorkspace(token, selectedGroupId);
-            setStatusMessage("Pending position rejected.");
-        } catch (requestError) {
-            setError(requestError instanceof Error ? requestError.message : "Failed to reject payment.");
         } finally {
             setBusyAction("");
         }
@@ -1022,8 +990,6 @@ export default function App() {
             onCreateMarket={handleCreateMarket}
             onUpdateTradeDraft={updateTradeDraft}
             onSavePosition={handleSavePosition}
-            onConfirmPosition={handleConfirmPosition}
-            onRejectPosition={handleRejectPosition}
             onResolve={handleResolve}
             onConfirmMarketResolution={handleConfirmMarketResolution}
             onDeleteMarket={handleDeleteMarket}
