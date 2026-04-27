@@ -1,0 +1,45 @@
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-render-awake
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Only run 8am-8pm America/New_York
+        shell: bash
+        run: |
+          set -euo pipefail
+          hour=$(TZ="America/New_York" date +%H)
+          # Allow 08:00 through 19:59 ET
+          if [ "$hour" -lt 8 ] || [ "$hour" -ge 20 ]; then
+            echo "Outside 8am-8pm ET (current ET hour: $hour). Exiting."
+            exit 0
+          fi
+          echo "Within 8am-8pm ET (current ET hour: $hour). Continuing."
+
+      - name: Random delay (0-7 minutes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          delay=$(( RANDOM % 421 ))  # 0..420 seconds (0..7 minutes)
+          echo "Sleeping for ${delay}s..."
+          sleep "${delay}"
+
+      - name: Ping Render backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://tupulakaralshi.onrender.com/health"
+          echo "Pinging ${URL}"
+          curl -fsS --max-time 20 "${URL}" > /dev/null
+          echo "OK"
