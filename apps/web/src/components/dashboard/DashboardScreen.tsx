@@ -345,7 +345,6 @@ export function DashboardScreen({
                     <section className="market-board">
                         <div className="panel-heading board-heading">
                             <div>
-                                <p className="kicker">Market board</p>
                                 <h2>{selectedGroup?.name ?? "Choose a group"}</h2>
                             </div>
                             <span className="subtle-copy">
