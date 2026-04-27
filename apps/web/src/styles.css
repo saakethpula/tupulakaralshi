@@ -132,17 +132,22 @@ textarea::placeholder {
 
 [data-theme="dark"] .preview-card,
 [data-theme="dark"] .progress-card,
+[data-theme="dark"] .slideshow-stage,
+[data-theme="dark"] .tutorial-step,
 [data-theme="dark"] .slide-callout,
 [data-theme="dark"] .cover-highlight,
 [data-theme="dark"] .tutorial-guide-card,
 [data-theme="dark"] .tutorial-success-banner,
+[data-theme="dark"] .tutorial-market-panel,
 [data-theme="dark"] .market-rail-card,
 [data-theme="dark"] .trade-box,
 [data-theme="dark"] .settlement-box,
+[data-theme="dark"] .settlement-row,
 [data-theme="dark"] .compact-form,
 [data-theme="dark"] .compact-metric,
 [data-theme="dark"] .member-management-row,
 [data-theme="dark"] .group-pill,
+[data-theme="dark"] .group-setup-pill,
 [data-theme="dark"] .member-card {
   background: rgba(68, 68, 78, 0.9);
   border-color: var(--line);
@@ -150,10 +155,28 @@ textarea::placeholder {
 }
 
 [data-theme="dark"] .group-pill.active,
+[data-theme="dark"] .group-setup-pill.active,
 [data-theme="dark"] .progress-card.active,
 [data-theme="dark"] .progress-card.complete {
   background: linear-gradient(145deg, rgba(93, 159, 150, 0.34), rgba(68, 68, 78, 0.96));
   border-color: rgba(147, 162, 160, 0.36);
+}
+
+[data-theme="dark"] .slideshow-stage {
+  background:
+    radial-gradient(circle at top right, rgba(93, 159, 150, 0.18), transparent 30%),
+    linear-gradient(180deg, rgba(56, 56, 66, 0.96), rgba(47, 46, 53, 0.94));
+}
+
+[data-theme="dark"] .cover-badge,
+[data-theme="dark"] .tutorial-number {
+  color: var(--text);
+  background: rgba(211, 218, 217, 0.12);
+}
+
+[data-theme="dark"] .pending-row {
+  background: rgba(93, 159, 150, 0.16);
+  border-color: rgba(147, 162, 160, 0.28);
 }
 
 [data-theme="dark"] .kicker,
@@ -539,7 +562,7 @@ textarea::placeholder {
   padding-top: 0;
 }
 
-.onboarding-shell > .status-banner {
+.onboarding-shell>.status-banner {
   display: none;
 }
 
@@ -1060,12 +1083,12 @@ textarea::placeholder {
   overflow: hidden;
 }
 
-.member-card > div {
+.member-card>div {
   min-width: 0;
 }
 
-.member-card > div strong,
-.member-card > div span {
+.member-card>div strong,
+.member-card>div span {
   overflow-wrap: anywhere;
 }
 
@@ -1076,7 +1099,7 @@ textarea::placeholder {
   font-size: 0.85rem;
 }
 
-.member-card > strong {
+.member-card>strong {
   justify-self: end;
   text-align: right;
   white-space: nowrap;
@@ -1275,6 +1298,7 @@ button:disabled {
 }
 
 @media (max-width: 900px) {
+
   .landing-hero,
   .onboarding-hero,
   .onboarding-grid {

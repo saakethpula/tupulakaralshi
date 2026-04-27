@@ -1,13 +1,14 @@
 import { REFERRAL_PARAM_KEYS } from "../constants/app";
+const JOIN_CODE_PATTERN = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6,12}$/;
 export function getReferralJoinCodeFromUrl() {
     if (typeof window === "undefined") {
         return "";
     }
     const searchParams = new URLSearchParams(window.location.search);
     for (const key of REFERRAL_PARAM_KEYS) {
-        const value = searchParams.get(key)?.trim();
-        if (value) {
-            return value.toUpperCase();
+        const value = searchParams.get(key)?.trim().toUpperCase();
+        if (value && JOIN_CODE_PATTERN.test(value)) {
+            return value;
         }
     }
     return "";
