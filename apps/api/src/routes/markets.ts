@@ -84,6 +84,7 @@ type SerializableMarket = {
   group: {
     minBet: number;
     maxBet: number;
+    requireVenmoForBets: boolean;
     memberships: Array<{
       userId: string;
     }>;
@@ -185,6 +186,7 @@ const detailedMarketInclude = {
     select: {
       minBet: true,
       maxBet: true,
+      requireVenmoForBets: true,
       memberships: {
         select: {
           userId: true
@@ -586,14 +588,15 @@ marketsRouter.put("/:marketId/position", asyncHandler(async (req, res) => {
 
   const updatedMarket = await prisma.$transaction(async (tx) => {
     if (amountToAdd > 0) {
+      const requiresVenmoConfirmation = market.group.requireVenmoForBets;
       await tx.position.create({
         data: {
           marketId,
           userId: currentUser.id,
           side: requestedOutcome.label.toUpperCase() === "YES" ? PositionSide.YES : requestedOutcome.label.toUpperCase() === "NO" ? PositionSide.NO : null,
           outcomeId: requestedOutcome.id,
-          status: PositionStatus.CONFIRMED,
-          confirmedAt: new Date(),
+          status: requiresVenmoConfirmation ? PositionStatus.PENDING : PositionStatus.CONFIRMED,
+          confirmedAt: requiresVenmoConfirmation ? null : new Date(),
           amount: amountToAdd
         }
       });

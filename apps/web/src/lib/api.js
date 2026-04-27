@@ -53,10 +53,10 @@ export function removeGroupMember(token, groupId, memberId) {
         method: "DELETE"
     });
 }
-export function updateGroupBetLimits(token, groupId, minBet, maxBet) {
+export function updateGroupBetLimits(token, groupId, minBet, maxBet, requireVenmoForBets) {
     return request(`/api/groups/${groupId}/bet-limits`, token, {
         method: "PATCH",
-        body: JSON.stringify({ minBet, maxBet })
+        body: JSON.stringify({ minBet, maxBet, requireVenmoForBets })
     });
 }
 export function deleteGroup(token, groupId) {

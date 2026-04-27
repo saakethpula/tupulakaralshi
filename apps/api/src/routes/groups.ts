@@ -18,7 +18,8 @@ const joinGroupSchema = z.object({
 
 const updateBetLimitsSchema = z.object({
   minBet: z.coerce.number().int().min(1).max(15),
-  maxBet: z.coerce.number().int().min(1).max(15)
+  maxBet: z.coerce.number().int().min(1).max(15),
+  requireVenmoForBets: z.coerce.boolean().optional()
 }).refine((value) => value.minBet <= value.maxBet, {
   message: "Minimum bet must be less than or equal to maximum bet."
 });
@@ -162,7 +163,8 @@ groupsRouter.patch("/:groupId/bet-limits", asyncHandler(async (req, res) => {
     where: { id: groupId },
     data: {
       minBet: input.minBet,
-      maxBet: input.maxBet
+      maxBet: input.maxBet,
+      ...(input.requireVenmoForBets === undefined ? {} : { requireVenmoForBets: input.requireVenmoForBets })
     }
   });
 

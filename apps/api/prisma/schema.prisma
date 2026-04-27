@@ -62,6 +62,7 @@ model FamilyGroup {
   joinCode    String            @unique
   minBet      Int               @default(1)
   maxBet      Int               @default(15)
+  requireVenmoForBets Boolean   @default(false)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   memberships GroupMembership[]

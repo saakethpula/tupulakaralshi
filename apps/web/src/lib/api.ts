@@ -4,6 +4,7 @@ export type FamilyGroup = {
   joinCode: string;
   minBet: number;
   maxBet: number;
+  requireVenmoForBets: boolean;
   role: "ADMIN" | "MEMBER";
   members: Array<{
     id: string;
@@ -258,10 +259,16 @@ export function removeGroupMember(token: string, groupId: string, memberId: stri
   });
 }
 
-export function updateGroupBetLimits(token: string, groupId: string, minBet: number, maxBet: number) {
+export function updateGroupBetLimits(
+  token: string,
+  groupId: string,
+  minBet: number,
+  maxBet: number,
+  requireVenmoForBets: boolean
+) {
   return request<{ group: FamilyGroup }>(`/api/groups/${groupId}/bet-limits`, token, {
     method: "PATCH",
-    body: JSON.stringify({ minBet, maxBet })
+    body: JSON.stringify({ minBet, maxBet, requireVenmoForBets })
   });
 }
 

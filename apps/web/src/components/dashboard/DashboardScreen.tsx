@@ -36,6 +36,8 @@ type DashboardScreenProps = {
     setMinBet: (value: string) => void;
     maxBet: string;
     setMaxBet: (value: string) => void;
+    requireVenmoForBets: boolean;
+    setRequireVenmoForBets: (value: boolean) => void;
     themePreference: ThemePreference;
     resolvedTheme: ResolvedTheme;
     setThemePreference: (value: ThemePreference) => void;
@@ -59,6 +61,8 @@ type DashboardScreenProps = {
     onCreateMarket: (event: FormEvent<HTMLFormElement>) => Promise<void>;
     onUpdateTradeDraft: (marketId: string, patch: Partial<TradeDraft>) => void;
     onSavePosition: (marketId: string) => Promise<void>;
+    onConfirmPosition: (marketId: string, positionId: string) => Promise<void>;
+    onRejectPosition: (marketId: string, positionId: string) => Promise<void>;
     onResolve: (marketId: string, outcomeId: string) => Promise<void>;
     onConfirmMarketResolution: (marketId: string) => Promise<void>;
     onDeleteMarket: (marketId: string) => Promise<void>;
@@ -95,6 +99,8 @@ export function DashboardScreen({
     setMinBet,
     maxBet,
     setMaxBet,
+    requireVenmoForBets,
+    setRequireVenmoForBets,
     themePreference,
     resolvedTheme,
     setThemePreference,
@@ -118,6 +124,8 @@ export function DashboardScreen({
     onCreateMarket,
     onUpdateTradeDraft,
     onSavePosition,
+    onConfirmPosition,
+    onRejectPosition,
     onResolve,
     onConfirmMarketResolution,
     onDeleteMarket,
@@ -236,6 +244,8 @@ export function DashboardScreen({
                 setMinBet={setMinBet}
                 maxBet={maxBet}
                 setMaxBet={setMaxBet}
+                requireVenmoForBets={requireVenmoForBets}
+                setRequireVenmoForBets={setRequireVenmoForBets}
                 onSaveBetLimits={onSaveBetLimits}
             />
 
@@ -399,6 +409,9 @@ export function DashboardScreen({
                                         }}
                                         onUpdateTradeDraft={onUpdateTradeDraft}
                                         onSavePosition={onSavePosition}
+                                        onConfirmPosition={onConfirmPosition}
+                                        onRejectPosition={onRejectPosition}
+                                        requireVenmoForBets={requireVenmoForBets}
                                         onResolveMarket={onResolve}
                                         onConfirmMarketResolution={onConfirmMarketResolution}
                                         onDeleteMarket={onDeleteMarket}

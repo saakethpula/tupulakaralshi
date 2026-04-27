@@ -16,6 +16,8 @@ type FamilyManagerModalProps = {
     setMinBet: (value: string) => void;
     maxBet: string;
     setMaxBet: (value: string) => void;
+    requireVenmoForBets: boolean;
+    setRequireVenmoForBets: (value: boolean) => void;
     onClose: () => void;
     onSelectGroup: (groupId: string) => void;
     onJoinGroup: (event: FormEvent<HTMLFormElement>) => Promise<void>;
@@ -40,6 +42,8 @@ export function FamilyManagerModal({
     setMinBet,
     maxBet,
     setMaxBet,
+    requireVenmoForBets,
+    setRequireVenmoForBets,
     onClose,
     onSelectGroup,
     onJoinGroup,
@@ -167,6 +171,14 @@ export function FamilyManagerModal({
                                         placeholder="Maximum per market"
                                         required
                                     />
+                                    <label className="subtle-copy" style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={requireVenmoForBets}
+                                            onChange={(event) => setRequireVenmoForBets(event.target.checked)}
+                                        />
+                                        Require creator Venmo confirmation before stakes go live
+                                    </label>
                                     <button className="ghost-button" type="submit" disabled={busyAction === "bet-limits"}>
                                         Save limits
                                     </button>

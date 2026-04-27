@@ -59,6 +59,7 @@ meRouter.get("/", asyncHandler(async (req, res) => {
       joinCode: membership.group.joinCode,
       minBet: membership.group.minBet,
       maxBet: membership.group.maxBet,
+      requireVenmoForBets: membership.group.requireVenmoForBets,
       role: membership.role,
       members: membership.group.memberships.map((groupMembership) => ({
         id: groupMembership.user.id,

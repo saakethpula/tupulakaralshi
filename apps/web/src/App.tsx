@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
     confirmMarketResolution,
+    confirmPosition,
     createGroup,
     createMarket,
     deleteGroup,
@@ -12,6 +13,7 @@ import {
     joinGroup,
     markPayoutSent,
     removeGroupMember,
+    rejectPosition,
     respondToPayout,
     resolveMarket,
     updateGroupBetLimits,
@@ -101,6 +103,7 @@ export default function App() {
     const [outcomeLabels, setOutcomeLabels] = useState<string[]>(["YES", "NO"]);
     const [minBet, setMinBet] = useState("1");
     const [maxBet, setMaxBet] = useState("15");
+    const [requireVenmoForBets, setRequireVenmoForBets] = useState(false);
     const [closesAt, setClosesAt] = useState(tomorrowAtNoon());
     const [statusMessage, setStatusMessage] = useState("Sign in to launch your prediction desk.");
     const [error, setError] = useState("");
@@ -191,6 +194,7 @@ export default function App() {
         if (activeGroup) {
             setMinBet(String(activeGroup.minBet));
             setMaxBet(String(activeGroup.maxBet));
+            setRequireVenmoForBets(activeGroup.requireVenmoForBets);
         }
         return nextProfile;
     }
@@ -704,9 +708,15 @@ export default function App() {
         setBusyAction("bet-limits");
 
         try {
-            await updateGroupBetLimits(token, selectedGroupId, Number(minBet || "0"), Number(maxBet || "0"));
+            await updateGroupBetLimits(
+                token,
+                selectedGroupId,
+                Number(minBet || "0"),
+                Number(maxBet || "0"),
+                requireVenmoForBets
+            );
             await refreshProfile(token);
-            setStatusMessage("Bet limits updated.");
+            setStatusMessage(requireVenmoForBets ? "Bet limits updated. Venmo confirmation is required." : "Bet limits updated. Stakes now go live immediately.");
         } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to update bet limits.");
         } finally {
@@ -768,11 +778,43 @@ export default function App() {
             await refreshWorkspace(token, selectedGroupId);
             setStatusMessage(
                 topUpAmount > 0
-                    ? `Position is live. Optionally send ${formatMoney(topUpAmount)} using the Venmo link for ${updatedMarket.venmoRecipient.venmoHandle ? `@${normalizeVenmoHandle(updatedMarket.venmoRecipient.venmoHandle)}` : updatedMarket.venmoRecipient.displayName} so the market stays settled on good faith.`
+                    ? selectedGroup?.requireVenmoForBets
+                        ? `Position submitted. Send ${formatMoney(topUpAmount)} using the Venmo link for ${updatedMarket.venmoRecipient.venmoHandle ? `@${normalizeVenmoHandle(updatedMarket.venmoRecipient.venmoHandle)}` : updatedMarket.venmoRecipient.displayName}, then wait for creator confirmation.`
+                        : `Position is live. Optionally send ${formatMoney(topUpAmount)} using the Venmo link for ${updatedMarket.venmoRecipient.venmoHandle ? `@${normalizeVenmoHandle(updatedMarket.venmoRecipient.venmoHandle)}` : updatedMarket.venmoRecipient.displayName} so the market stays settled on good faith.`
                     : "Enter a larger amount to add to this position."
             );
         } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to save position.");
+        } finally {
+            setBusyAction("");
+        }
+    }
+
+    async function handleConfirmPosition(marketId: string, positionId: string) {
+        setError("");
+        setBusyAction(`confirm-${positionId}`);
+
+        try {
+            await confirmPosition(token, marketId, positionId);
+            await refreshWorkspace(token, selectedGroupId);
+            setStatusMessage("Payment confirmed. The position is now live on the market.");
+        } catch (requestError) {
+            setError(requestError instanceof Error ? requestError.message : "Failed to confirm payment.");
+        } finally {
+            setBusyAction("");
+        }
+    }
+
+    async function handleRejectPosition(marketId: string, positionId: string) {
+        setError("");
+        setBusyAction(`reject-${positionId}`);
+
+        try {
+            await rejectPosition(token, marketId, positionId);
+            await refreshWorkspace(token, selectedGroupId);
+            setStatusMessage("Pending position rejected.");
+        } catch (requestError) {
+            setError(requestError instanceof Error ? requestError.message : "Failed to reject payment.");
         } finally {
             setBusyAction("");
         }
@@ -961,6 +1003,8 @@ export default function App() {
             setMinBet={setMinBet}
             maxBet={maxBet}
             setMaxBet={setMaxBet}
+            requireVenmoForBets={requireVenmoForBets}
+            setRequireVenmoForBets={setRequireVenmoForBets}
             themePreference={themePreference}
             resolvedTheme={resolvedTheme}
             setThemePreference={setThemePreference}
@@ -990,6 +1034,8 @@ export default function App() {
             onCreateMarket={handleCreateMarket}
             onUpdateTradeDraft={updateTradeDraft}
             onSavePosition={handleSavePosition}
+            onConfirmPosition={handleConfirmPosition}
+            onRejectPosition={handleRejectPosition}
             onResolve={handleResolve}
             onConfirmMarketResolution={handleConfirmMarketResolution}
             onDeleteMarket={handleDeleteMarket}

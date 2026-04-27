@@ -1,7 +1,7 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { confirmMarketResolution, createGroup, createMarket, deleteGroup, deleteMarket, getCurrentUser, getMarkets, getRealtimeWebSocketUrl, joinGroup, markPayoutSent, removeGroupMember, respondToPayout, resolveMarket, updateGroupBetLimits, updateTutorialCompletion, updateVenmoHandle, upsertPosition } from "./lib/api";
+import { confirmMarketResolution, confirmPosition, createGroup, createMarket, deleteGroup, deleteMarket, getCurrentUser, getMarkets, getRealtimeWebSocketUrl, joinGroup, markPayoutSent, removeGroupMember, rejectPosition, respondToPayout, resolveMarket, updateGroupBetLimits, updateTutorialCompletion, updateVenmoHandle, upsertPosition } from "./lib/api";
 import { DashboardScreen } from "./components/dashboard/DashboardScreen";
 import { LandingScreen } from "./components/LandingScreen";
 import { OnboardingScreen } from "./components/onboarding/OnboardingScreen";
@@ -46,6 +46,7 @@ export default function App() {
     const [outcomeLabels, setOutcomeLabels] = useState(["YES", "NO"]);
     const [minBet, setMinBet] = useState("1");
     const [maxBet, setMaxBet] = useState("15");
+    const [requireVenmoForBets, setRequireVenmoForBets] = useState(false);
     const [closesAt, setClosesAt] = useState(tomorrowAtNoon());
     const [statusMessage, setStatusMessage] = useState("Sign in to launch your prediction desk.");
     const [error, setError] = useState("");
@@ -115,6 +116,7 @@ export default function App() {
         if (activeGroup) {
             setMinBet(String(activeGroup.minBet));
             setMaxBet(String(activeGroup.maxBet));
+            setRequireVenmoForBets(activeGroup.requireVenmoForBets);
         }
         return nextProfile;
     }
@@ -567,9 +569,9 @@ export default function App() {
         setError("");
         setBusyAction("bet-limits");
         try {
-            await updateGroupBetLimits(token, selectedGroupId, Number(minBet || "0"), Number(maxBet || "0"));
+            await updateGroupBetLimits(token, selectedGroupId, Number(minBet || "0"), Number(maxBet || "0"), requireVenmoForBets);
             await refreshProfile(token);
-            setStatusMessage("Bet limits updated.");
+            setStatusMessage(requireVenmoForBets ? "Bet limits updated. Venmo confirmation is required." : "Bet limits updated. Stakes now go live immediately.");
         }
         catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to update bet limits.");
@@ -629,11 +631,43 @@ export default function App() {
             });
             await refreshWorkspace(token, selectedGroupId);
             setStatusMessage(topUpAmount > 0
-                ? `Position is live. Optionally send ${formatMoney(topUpAmount)} using the Venmo link for ${updatedMarket.venmoRecipient.venmoHandle ? `@${normalizeVenmoHandle(updatedMarket.venmoRecipient.venmoHandle)}` : updatedMarket.venmoRecipient.displayName} so the market stays settled on good faith.`
+                ? selectedGroup?.requireVenmoForBets
+                    ? `Position submitted. Send ${formatMoney(topUpAmount)} using the Venmo link for ${updatedMarket.venmoRecipient.venmoHandle ? `@${normalizeVenmoHandle(updatedMarket.venmoRecipient.venmoHandle)}` : updatedMarket.venmoRecipient.displayName}, then wait for creator confirmation.`
+                    : `Position is live. Optionally send ${formatMoney(topUpAmount)} using the Venmo link for ${updatedMarket.venmoRecipient.venmoHandle ? `@${normalizeVenmoHandle(updatedMarket.venmoRecipient.venmoHandle)}` : updatedMarket.venmoRecipient.displayName} so the market stays settled on good faith.`
                 : "Enter a larger amount to add to this position.");
         }
         catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to save position.");
+        }
+        finally {
+            setBusyAction("");
+        }
+    }
+    async function handleConfirmPosition(marketId, positionId) {
+        setError("");
+        setBusyAction(`confirm-${positionId}`);
+        try {
+            await confirmPosition(token, marketId, positionId);
+            await refreshWorkspace(token, selectedGroupId);
+            setStatusMessage("Payment confirmed. The position is now live on the market.");
+        }
+        catch (requestError) {
+            setError(requestError instanceof Error ? requestError.message : "Failed to confirm payment.");
+        }
+        finally {
+            setBusyAction("");
+        }
+    }
+    async function handleRejectPosition(marketId, positionId) {
+        setError("");
+        setBusyAction(`reject-${positionId}`);
+        try {
+            await rejectPosition(token, marketId, positionId);
+            await refreshWorkspace(token, selectedGroupId);
+            setStatusMessage("Pending position rejected.");
+        }
+        catch (requestError) {
+            setError(requestError instanceof Error ? requestError.message : "Failed to reject payment.");
         }
         finally {
             setBusyAction("");
@@ -737,9 +771,9 @@ export default function App() {
     if (showOnboarding) {
         return (_jsx(OnboardingScreen, { profile: profile, statusMessage: statusMessage, error: error, busyAction: busyAction, needsVenmoHandle: needsVenmoHandle, needsFirstGroup: needsFirstGroup, onboardingReady: onboardingReady, canStartPractice: canStartPractice, onboardingStep: onboardingStep, setOnboardingStep: setOnboardingStep, skipGroupSetupStep: skipGroupSetupStep, groupSetupMode: groupSetupMode, setGroupSetupMode: setGroupSetupMode, referralJoinCode: referralJoinCode, joinCode: joinCode, setJoinCode: setJoinCode, groupName: groupName, setGroupName: setGroupName, venmoHandle: venmoHandle, setVenmoHandle: setVenmoHandle, tutorialDraft: tutorialDraft, tutorialAmountNumber: tutorialAmountNumber, tutorialPracticeStep: tutorialPracticeStep, tutorialHoverTarget: tutorialHoverTarget, setTutorialHoverTarget: setTutorialHoverTarget, tutorialBetPlaced: tutorialBetPlaced, tutorialPrompt: tutorialPrompt, tutorialVenmoUrl: tutorialVenmoUrl, onTutorialSideChange: handleTutorialSideChange, onTutorialAmountChange: handleTutorialAmountChange, onTutorialPlaceBet: handleTutorialPlaceBet, onTutorialPaymentSent: handleTutorialPaymentSent, onSaveVenmoHandle: handleSaveVenmoHandle, onJoinGroup: handleJoinGroup, onCreateGroup: handleCreateGroup, onCompleteTutorial: handleTutorialCompletion }));
     }
-    return (_jsx(DashboardScreen, { profile: profile, selectedGroup: selectedGroup, selectedGroupId: selectedGroupId, setSelectedGroupId: setSelectedGroupId, markets: markets, visibleMembers: visibleMembers, tradeDrafts: tradeDrafts, question: question, setQuestion: setQuestion, description: description, setDescription: setDescription, targetUserId: targetUserId, setTargetUserId: setTargetUserId, outcomeLabels: outcomeLabels, setOutcomeLabels: setOutcomeLabels, closesAt: closesAt, setClosesAt: setClosesAt, groupName: groupName, setGroupName: setGroupName, joinCode: joinCode, setJoinCode: setJoinCode, referralJoinCode: referralJoinCode, venmoHandle: venmoHandle, setVenmoHandle: setVenmoHandle, minBet: minBet, setMinBet: setMinBet, maxBet: maxBet, setMaxBet: setMaxBet, themePreference: themePreference, resolvedTheme: resolvedTheme, setThemePreference: setThemePreference, selectedGroupInviteUrl: selectedGroupInviteUrl, busyAction: busyAction, error: error, settingsOpen: settingsOpen, setSettingsOpen: setSettingsOpen, familyManagerOpen: familyManagerOpen, setFamilyManagerOpen: setFamilyManagerOpen, onOpenFamilyManager: openFamilyManager, onLogout: () => logout({
+    return (_jsx(DashboardScreen, { profile: profile, selectedGroup: selectedGroup, selectedGroupId: selectedGroupId, setSelectedGroupId: setSelectedGroupId, markets: markets, visibleMembers: visibleMembers, tradeDrafts: tradeDrafts, question: question, setQuestion: setQuestion, description: description, setDescription: setDescription, targetUserId: targetUserId, setTargetUserId: setTargetUserId, outcomeLabels: outcomeLabels, setOutcomeLabels: setOutcomeLabels, closesAt: closesAt, setClosesAt: setClosesAt, groupName: groupName, setGroupName: setGroupName, joinCode: joinCode, setJoinCode: setJoinCode, referralJoinCode: referralJoinCode, venmoHandle: venmoHandle, setVenmoHandle: setVenmoHandle, minBet: minBet, setMinBet: setMinBet, maxBet: maxBet, setMaxBet: setMaxBet, requireVenmoForBets: requireVenmoForBets, setRequireVenmoForBets: setRequireVenmoForBets, themePreference: themePreference, resolvedTheme: resolvedTheme, setThemePreference: setThemePreference, selectedGroupInviteUrl: selectedGroupInviteUrl, busyAction: busyAction, error: error, settingsOpen: settingsOpen, setSettingsOpen: setSettingsOpen, familyManagerOpen: familyManagerOpen, setFamilyManagerOpen: setFamilyManagerOpen, onOpenFamilyManager: openFamilyManager, onLogout: () => logout({
             logoutParams: {
                 returnTo: window.location.origin
             }
-        }), onSaveVenmoHandle: handleSaveVenmoHandle, onRestartTutorial: handleRestartTutorial, onCreateGroup: handleCreateGroup, onJoinGroup: handleJoinGroup, onCopyInviteLink: copyInviteLink, onRemoveGroupMember: handleRemoveGroupMember, onDeleteGroup: handleDeleteGroup, onSaveBetLimits: handleSaveBetLimits, onCreateMarket: handleCreateMarket, onUpdateTradeDraft: updateTradeDraft, onSavePosition: handleSavePosition, onResolve: handleResolve, onConfirmMarketResolution: handleConfirmMarketResolution, onDeleteMarket: handleDeleteMarket, onMarkPayoutSent: handleMarkPayoutSent, onRespondToPayout: handleRespondToPayout }));
+        }), onSaveVenmoHandle: handleSaveVenmoHandle, onRestartTutorial: handleRestartTutorial, onCreateGroup: handleCreateGroup, onJoinGroup: handleJoinGroup, onCopyInviteLink: copyInviteLink, onRemoveGroupMember: handleRemoveGroupMember, onDeleteGroup: handleDeleteGroup, onSaveBetLimits: handleSaveBetLimits, onCreateMarket: handleCreateMarket, onUpdateTradeDraft: updateTradeDraft, onSavePosition: handleSavePosition, onConfirmPosition: handleConfirmPosition, onRejectPosition: handleRejectPosition, onResolve: handleResolve, onConfirmMarketResolution: handleConfirmMarketResolution, onDeleteMarket: handleDeleteMarket, onMarkPayoutSent: handleMarkPayoutSent, onRespondToPayout: handleRespondToPayout }));
 }
