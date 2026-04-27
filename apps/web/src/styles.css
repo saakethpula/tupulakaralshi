@@ -815,8 +815,26 @@ textarea::placeholder {
   display: flex;
   gap: 0.9rem;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   width: 100%;
+}
+
+.toolbar-title {
+  min-width: 0;
+}
+
+.toolbar-title h1 {
+  margin: 0.1rem 0 0;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  line-height: 1.1;
+}
+
+.toolbar-right {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
 }
 
 .toolbar-actions {
@@ -1528,6 +1546,11 @@ textarea::placeholder {
   margin-top: 1rem;
 }
 
+.create-market-context {
+  display: grid;
+  gap: 0.35rem;
+}
+
 .modal-context {
   margin: 0;
 }
@@ -1596,6 +1619,11 @@ button:disabled {
     justify-content: space-between;
   }
 
+  .toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .settings-modal {
     width: min(100vw - 1.25rem, 960px);
     max-height: calc(100vh - 1.25rem);
@@ -1648,10 +1676,24 @@ button:disabled {
     gap: 0.75rem;
   }
 
-  .toolbar-balance {
+  .toolbar-title {
     flex: 1 1 auto;
     min-width: 0;
-    justify-items: start;
+  }
+
+  .toolbar-title h1 {
+    font-size: 1.35rem;
+  }
+
+  .toolbar-right {
+    width: auto;
+    gap: 0.65rem;
+  }
+
+  .toolbar-balance {
+    flex: 0 1 auto;
+    min-width: 0;
+    justify-items: end;
   }
 
   .toolbar-actions {

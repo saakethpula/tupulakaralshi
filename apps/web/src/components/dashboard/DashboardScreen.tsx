@@ -184,24 +184,30 @@ export function DashboardScreen({
         <main className="shell app-shell">
             <section className="dashboard-toolbar">
                 <div className="toolbar-meta">
-                    <div className="toolbar-balance">
-                        <span className="metric-label">Net won / lost</span>
-                        <strong>{formatSignedMoney(profile.user.balance)}</strong>
+                    <div className="toolbar-title">
+                        <span className="metric-label">Current group</span>
+                        <h1>{selectedGroup?.name ?? "Choose a group"}</h1>
                     </div>
-                    <div className="toolbar-actions">
-                        <button
-                            className="toolbar-button"
-                            type="button"
-                            onClick={() => setSettingsOpen((current) => !current)}
-                        >
-                            {settingsOpen ? "Close settings" : "Settings"}
-                        </button>
-                        <button
-                            className="toolbar-button toolbar-button-secondary"
-                            onClick={onLogout}
-                        >
-                            Log out
-                        </button>
+                    <div className="toolbar-right">
+                        <div className="toolbar-balance">
+                            <span className="metric-label">Net won / lost</span>
+                            <strong>{formatSignedMoney(profile.user.balance)}</strong>
+                        </div>
+                        <div className="toolbar-actions">
+                            <button
+                                className="toolbar-button"
+                                type="button"
+                                onClick={() => setSettingsOpen((current) => !current)}
+                            >
+                                {settingsOpen ? "Close settings" : "Settings"}
+                            </button>
+                            <button
+                                className="toolbar-button toolbar-button-secondary"
+                                onClick={onLogout}
+                            >
+                                Log out
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -278,7 +284,12 @@ export function DashboardScreen({
                                 Close
                             </button>
                         </div>
-                        {selectedGroup ? <p className="subtle-copy modal-context">Live in {selectedGroup.name}</p> : null}
+                        <div className="create-market-context">
+                            {selectedGroup ? <p className="subtle-copy modal-context">Live in {selectedGroup.name}</p> : null}
+                            <p className="subtle-copy modal-context">
+                                General markets are visible to everyone. Person-specific markets stay hidden from the subject.
+                            </p>
+                        </div>
                         <form onSubmit={(event) => void onCreateMarket(event)} className="create-market-grid">
                             <select
                                 value={targetUserId}
@@ -360,15 +371,6 @@ export function DashboardScreen({
             <section className="dashboard-grid">
                 <section className="main-stack">
                     <section className="market-board">
-                        <div className="panel-heading board-heading">
-                            <div>
-                                <h2>{selectedGroup?.name ?? "Choose a group"}</h2>
-                            </div>
-                            <span className="subtle-copy">
-                                General markets are visible to everyone. Person-specific markets stay hidden from the subject.
-                            </span>
-                        </div>
-
                         {markets.length === 0 ? (
                             <article className="empty-panel">
                                 <h3>No visible markets yet.</h3>
