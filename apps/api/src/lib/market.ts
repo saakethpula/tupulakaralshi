@@ -42,16 +42,15 @@ function getInitialOutcomeVolumes(outcomes: OutcomeLike[]) {
 }
 
 function calculateOutcomePrices(outcomes: OutcomeLike[], outcomeVolumes: Map<string, number>) {
-  const startingVolumePerOutcome = 1;
   const totalVolume = [...outcomeVolumes.values()].reduce((total, volume) => total + volume, 0);
-  const pricedVolume = totalVolume + outcomes.length * startingVolumePerOutcome;
+  const pricedVolume = totalVolume;
 
   return outcomes.map((outcome) => {
     const volume = outcomeVolumes.get(outcome.id) ?? 0;
     const price =
       pricedVolume === 0
         ? 1 / outcomes.length
-        : (volume + startingVolumePerOutcome) / pricedVolume;
+        : volume / pricedVolume;
 
     return {
       id: outcome.id,

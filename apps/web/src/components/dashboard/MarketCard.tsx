@@ -1,3 +1,4 @@
+import { useState, type PointerEvent } from "react";
 import type { CurrentUserResponse, Market } from "../../lib/api";
 import type { TradeDraft } from "../../types/app";
 import { formatMoney, formatPercent } from "../../utils/format";
@@ -27,13 +28,39 @@ function buildChartPath(points: Array<{ x: number; y: number }>) {
     return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
 }
 
+function formatChartTimestamp(timestamp?: string | null) {
+    if (!timestamp) {
+        return "Opening odds";
+    }
+
+    return new Date(timestamp).toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
+
 function MarketOddsChart({ market }: { market: Market }) {
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const chartWidth = 100;
     const chartHeight = 48;
     const existingPriceHistory = market.summary.priceHistory ?? [];
     const priceHistory = existingPriceHistory.length > 0
         ? existingPriceHistory
         : [{ timestamp: null, outcomes: market.summary.outcomes.map(({ id, label, price }) => ({ id, label, price })) }];
+    const visibleActiveIndex = activeIndex ?? priceHistory.length - 1;
+    const activeHistoryPoint = priceHistory[visibleActiveIndex] ?? priceHistory[priceHistory.length - 1];
+    const activeX = priceHistory.length > 1
+        ? (visibleActiveIndex / (priceHistory.length - 1)) * chartWidth
+        : chartWidth;
+    const handlePointerMove = (event: PointerEvent<SVGSVGElement>) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const pointerRatio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+        const nextIndex = Math.round(pointerRatio * Math.max(0, priceHistory.length - 1));
+
+        setActiveIndex(nextIndex);
+    };
     const pathPoints = market.summary.outcomes.map((outcome) => {
         const historyPoints = priceHistory.map((historyPoint, index) => {
             const divisor = Math.max(1, priceHistory.length - 1);
@@ -54,6 +81,11 @@ function MarketOddsChart({ market }: { market: Market }) {
             path: buildChartPath(normalizedPoints)
         };
     });
+    const activeOutcomes = market.summary.outcomes.map((outcome) => ({
+        ...outcome,
+        color: OUTCOME_LINE_COLORS[market.summary.outcomes.findIndex((entry) => entry.id === outcome.id) % OUTCOME_LINE_COLORS.length],
+        price: activeHistoryPoint?.outcomes.find((entry) => entry.id === outcome.id)?.price ?? outcome.price
+    }));
 
     return (
         <section className="market-chart" aria-label="Live odds chart">
@@ -61,14 +93,57 @@ function MarketOddsChart({ market }: { market: Market }) {
                 <span className="kicker">Live odds</span>
                 <strong>{market.summary.leadingOutcome.label} {formatPercent(market.summary.leadingOutcome.price)}</strong>
             </div>
-            <svg className="odds-chart" viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label="Odds history">
-                <line x1="0" x2={chartWidth} y1={chartHeight * 0.25} y2={chartHeight * 0.25} />
-                <line x1="0" x2={chartWidth} y1={chartHeight * 0.5} y2={chartHeight * 0.5} />
-                <line x1="0" x2={chartWidth} y1={chartHeight * 0.75} y2={chartHeight * 0.75} />
-                {pathPoints.map((outcome) => (
-                    <path key={outcome.id} d={outcome.path} style={{ stroke: outcome.color }} />
-                ))}
-            </svg>
+            <div className={`odds-chart-wrap ${activeIndex !== null ? "active" : ""}`}>
+                <svg
+                    className="odds-chart"
+                    viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                    role="img"
+                    aria-label="Odds history"
+                    tabIndex={0}
+                    onPointerMove={handlePointerMove}
+                    onPointerLeave={() => setActiveIndex(null)}
+                    onFocus={() => setActiveIndex(priceHistory.length - 1)}
+                    onBlur={() => setActiveIndex(null)}
+                    onKeyDown={(event) => {
+                        if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                            event.preventDefault();
+                            setActiveIndex((current) => {
+                                const fallbackIndex = current ?? priceHistory.length - 1;
+                                const direction = event.key === "ArrowLeft" ? -1 : 1;
+
+                                return Math.min(priceHistory.length - 1, Math.max(0, fallbackIndex + direction));
+                            });
+                        }
+                    }}
+                >
+                    <line x1="0" x2={chartWidth} y1={chartHeight * 0.25} y2={chartHeight * 0.25} />
+                    <line x1="0" x2={chartWidth} y1={chartHeight * 0.5} y2={chartHeight * 0.5} />
+                    <line x1="0" x2={chartWidth} y1={chartHeight * 0.75} y2={chartHeight * 0.75} />
+                    {pathPoints.map((outcome) => (
+                        <path key={outcome.id} d={outcome.path} style={{ stroke: outcome.color }} />
+                    ))}
+                    <line className="odds-crosshair" x1={activeX} x2={activeX} y1="0" y2={chartHeight} />
+                    {activeOutcomes.map((outcome) => (
+                        <circle
+                            key={outcome.id}
+                            className="odds-point"
+                            cx={activeX}
+                            cy={chartHeight - outcome.price * chartHeight}
+                            r="1.35"
+                            style={{ fill: outcome.color }}
+                        />
+                    ))}
+                </svg>
+                <div className="odds-tooltip" style={{ left: `clamp(80px, ${activeX}%, calc(100% - 80px))` }}>
+                    <strong>{formatChartTimestamp(activeHistoryPoint?.timestamp)}</strong>
+                    {activeOutcomes.map((outcome) => (
+                        <span key={outcome.id}>
+                            <i style={{ background: outcome.color }} />
+                            {outcome.label} {formatPercent(outcome.price)}
+                        </span>
+                    ))}
+                </div>
+            </div>
             <div className="market-chart-legend">
                 {pathPoints.map((outcome) => (
                     <span key={outcome.id}>

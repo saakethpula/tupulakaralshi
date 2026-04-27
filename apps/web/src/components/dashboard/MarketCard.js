@@ -1,17 +1,41 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { useState } from "react";
 import { formatMoney, formatPercent } from "../../utils/format";
 import { getVenmoPaymentUrl, normalizeVenmoHandle } from "../../utils/venmo";
 const OUTCOME_LINE_COLORS = ["#4f8f85", "#c98d82", "#c7a56a", "#6b7fa7", "#9b7bb4"];
 function buildChartPath(points) {
     return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
 }
+function formatChartTimestamp(timestamp) {
+    if (!timestamp) {
+        return "Opening odds";
+    }
+    return new Date(timestamp).toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
 function MarketOddsChart({ market }) {
+    const [activeIndex, setActiveIndex] = useState(null);
     const chartWidth = 100;
     const chartHeight = 48;
     const existingPriceHistory = market.summary.priceHistory ?? [];
     const priceHistory = existingPriceHistory.length > 0
         ? existingPriceHistory
         : [{ timestamp: null, outcomes: market.summary.outcomes.map(({ id, label, price }) => ({ id, label, price })) }];
+    const visibleActiveIndex = activeIndex ?? priceHistory.length - 1;
+    const activeHistoryPoint = priceHistory[visibleActiveIndex] ?? priceHistory[priceHistory.length - 1];
+    const activeX = priceHistory.length > 1
+        ? (visibleActiveIndex / (priceHistory.length - 1)) * chartWidth
+        : chartWidth;
+    const handlePointerMove = (event) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const pointerRatio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+        const nextIndex = Math.round(pointerRatio * Math.max(0, priceHistory.length - 1));
+        setActiveIndex(nextIndex);
+    };
     const pathPoints = market.summary.outcomes.map((outcome) => {
         const historyPoints = priceHistory.map((historyPoint, index) => {
             const divisor = Math.max(1, priceHistory.length - 1);
@@ -30,7 +54,21 @@ function MarketOddsChart({ market }) {
             path: buildChartPath(normalizedPoints)
         };
     });
-    return (_jsxs("section", { className: "market-chart", "aria-label": "Live odds chart", children: [_jsxs("div", { className: "market-chart-heading", children: [_jsx("span", { className: "kicker", children: "Live odds" }), _jsxs("strong", { children: [market.summary.leadingOutcome.label, " ", formatPercent(market.summary.leadingOutcome.price)] })] }), _jsxs("svg", { className: "odds-chart", viewBox: `0 0 ${chartWidth} ${chartHeight}`, role: "img", "aria-label": "Odds history", children: [_jsx("line", { x1: "0", x2: chartWidth, y1: chartHeight * 0.25, y2: chartHeight * 0.25 }), _jsx("line", { x1: "0", x2: chartWidth, y1: chartHeight * 0.5, y2: chartHeight * 0.5 }), _jsx("line", { x1: "0", x2: chartWidth, y1: chartHeight * 0.75, y2: chartHeight * 0.75 }), pathPoints.map((outcome) => (_jsx("path", { d: outcome.path, style: { stroke: outcome.color } }, outcome.id)))] }), _jsx("div", { className: "market-chart-legend", children: pathPoints.map((outcome) => (_jsxs("span", { children: [_jsx("i", { style: { background: outcome.color } }), outcome.label, " ", formatPercent(outcome.price)] }, outcome.id))) })] }));
+    const activeOutcomes = market.summary.outcomes.map((outcome) => ({
+        ...outcome,
+        color: OUTCOME_LINE_COLORS[market.summary.outcomes.findIndex((entry) => entry.id === outcome.id) % OUTCOME_LINE_COLORS.length],
+        price: activeHistoryPoint?.outcomes.find((entry) => entry.id === outcome.id)?.price ?? outcome.price
+    }));
+    return (_jsxs("section", { className: "market-chart", "aria-label": "Live odds chart", children: [_jsxs("div", { className: "market-chart-heading", children: [_jsx("span", { className: "kicker", children: "Live odds" }), _jsxs("strong", { children: [market.summary.leadingOutcome.label, " ", formatPercent(market.summary.leadingOutcome.price)] })] }), _jsxs("div", { className: `odds-chart-wrap ${activeIndex !== null ? "active" : ""}`, children: [_jsxs("svg", { className: "odds-chart", viewBox: `0 0 ${chartWidth} ${chartHeight}`, role: "img", "aria-label": "Odds history", tabIndex: 0, onPointerMove: handlePointerMove, onPointerLeave: () => setActiveIndex(null), onFocus: () => setActiveIndex(priceHistory.length - 1), onBlur: () => setActiveIndex(null), onKeyDown: (event) => {
+                            if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                                event.preventDefault();
+                                setActiveIndex((current) => {
+                                    const fallbackIndex = current ?? priceHistory.length - 1;
+                                    const direction = event.key === "ArrowLeft" ? -1 : 1;
+                                    return Math.min(priceHistory.length - 1, Math.max(0, fallbackIndex + direction));
+                                });
+                            }
+                        }, children: [_jsx("line", { x1: "0", x2: chartWidth, y1: chartHeight * 0.25, y2: chartHeight * 0.25 }), _jsx("line", { x1: "0", x2: chartWidth, y1: chartHeight * 0.5, y2: chartHeight * 0.5 }), _jsx("line", { x1: "0", x2: chartWidth, y1: chartHeight * 0.75, y2: chartHeight * 0.75 }), pathPoints.map((outcome) => (_jsx("path", { d: outcome.path, style: { stroke: outcome.color } }, outcome.id))), _jsx("line", { className: "odds-crosshair", x1: activeX, x2: activeX, y1: "0", y2: chartHeight }), activeOutcomes.map((outcome) => (_jsx("circle", { className: "odds-point", cx: activeX, cy: chartHeight - outcome.price * chartHeight, r: "1.35", style: { fill: outcome.color } }, outcome.id)))] }), _jsxs("div", { className: "odds-tooltip", style: { left: `clamp(80px, ${activeX}%, calc(100% - 80px))` }, children: [_jsx("strong", { children: formatChartTimestamp(activeHistoryPoint?.timestamp) }), activeOutcomes.map((outcome) => (_jsxs("span", { children: [_jsx("i", { style: { background: outcome.color } }), outcome.label, " ", formatPercent(outcome.price)] }, outcome.id)))] })] }), _jsx("div", { className: "market-chart-legend", children: pathPoints.map((outcome) => (_jsxs("span", { children: [_jsx("i", { style: { background: outcome.color } }), outcome.label, " ", formatPercent(outcome.price)] }, outcome.id))) })] }));
 }
 export function MarketCard({ market, profile, selectedGroupRole, maxBet, busyAction, draft, onUpdateTradeDraft, onSavePosition, onConfirmPosition, onRejectPosition, onResolveMarket, onConfirmMarketResolution, onDeleteMarket, onMarkPayoutSent, onRespondToPayout }) {
     const canRemove = market.createdBy.id === profile.user.id || selectedGroupRole === "ADMIN";
