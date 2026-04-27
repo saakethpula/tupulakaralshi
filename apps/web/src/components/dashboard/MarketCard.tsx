@@ -118,6 +118,7 @@ export function MarketCard({
         ? Math.floor((previewTotalPot * draftAmount) / previewOutcomeVolume)
         : 0;
     const currentNet = currentPayout - draftAmount;
+    const payoutToYou = market.status === "RESOLVED" ? market.userPayout : currentPayout;
     const renderVenmoLink = (handle: string | null | undefined, fallback: string, amount?: number) => {
         const normalizedHandle = normalizeVenmoHandle(handle);
         const venmoUrl = getVenmoPaymentUrl(handle, amount, `Payment for ${market.question}`);
@@ -175,7 +176,7 @@ export function MarketCard({
                 </div>
                 <div className="market-rail-card">
                     <span>Payout to you</span>
-                    <strong>{formatMoney(market.userPayout)}</strong>
+                    <strong>{formatMoney(payoutToYou)}</strong>
                 </div>
             </div>
 

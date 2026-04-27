@@ -1313,11 +1313,25 @@ textarea::placeholder {
 }
 
 .payout-preview strong {
-  color: var(--ink);
+  color: var(--text);
 }
 
 .payout-preview small {
   grid-column: 1 / -1;
+}
+
+[data-theme="dark"] .payout-preview {
+  background: rgba(35, 35, 42, 0.92);
+  border-color: rgba(211, 218, 217, 0.26);
+}
+
+[data-theme="dark"] .payout-preview span,
+[data-theme="dark"] .payout-preview small {
+  color: rgba(243, 248, 247, 0.88);
+}
+
+[data-theme="dark"] .payout-preview strong {
+  color: #ffffff;
 }
 
 .venmo-link {
