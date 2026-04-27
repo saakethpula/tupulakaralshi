@@ -1,6 +1,6 @@
 # Bet With Friends
 
-A private, Kalshi-inspired prediction market for family use. Family members can create markets about each other, while the person a market is about is prevented from seeing or participating in it.
+A private, Kalshi-inspired prediction market for family and friends use. People can create markets about each other, while the person a market is about is prevented from seeing or participating in it.
 
 ## Stack
 
@@ -19,8 +19,8 @@ A private, Kalshi-inspired prediction market for family use. Family members can 
 
 ## Core Rules
 
-- Markets belong to a family group.
-- A market targets one family member.
-- The targeted family member cannot view or trade in that market.
+- Markets belong to a group.
+- A market targets one member.
+- The targeted member cannot view or trade in that market.
 - Users are provisioned automatically on first login.
 - The first user in a group becomes an admin and can share a join code.
