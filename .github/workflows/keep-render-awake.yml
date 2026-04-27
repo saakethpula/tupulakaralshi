@@ -1,6 +1,8 @@
+name: Keep Render Awake
+
 on:
   schedule:
-    - cron: "* * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -15,11 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Random delay (0-7 minutes)
+      - name: Random delay
         shell: bash
         run: |
           set -euo pipefail
-          delay=$(( RANDOM % 421 ))  # 0..420 seconds (0..7 minutes)
+          delay=$(( RANDOM % 121 ))  # 0..2 minutes
           echo "Sleeping for ${delay}s..."
           sleep "${delay}"
 
