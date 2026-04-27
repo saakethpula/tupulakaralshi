@@ -130,6 +130,7 @@ export type Market = {
     id: string;
     recipientUserId: string;
     displayName: string;
+    venmoHandle?: string | null;
     amount: number;
     status: "PENDING_CREATOR" | "PENDING_RECIPIENT" | "DISPUTED" | "CONFIRMED";
     creatorMarkedAt?: string | null;
@@ -140,6 +141,7 @@ export type Market = {
     id: string;
     recipientUserId: string;
     displayName: string;
+    venmoHandle?: string | null;
     amount: number;
     status: "PENDING_CREATOR" | "PENDING_RECIPIENT" | "DISPUTED" | "CONFIRMED";
     creatorMarkedAt?: string | null;
@@ -172,13 +174,11 @@ export type Market = {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-export function getRealtimeWebSocketUrl(token: string) {
+export function getRealtimeWebSocketUrl() {
   const realtimeUrl = new URL(apiBaseUrl);
   realtimeUrl.protocol = realtimeUrl.protocol === "https:" ? "wss:" : "ws:";
   realtimeUrl.pathname = "/ws";
-  realtimeUrl.search = new URLSearchParams({
-    access_token: token
-  }).toString();
+  realtimeUrl.search = "";
   return realtimeUrl.toString();
 }
 

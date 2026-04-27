@@ -1,4 +1,4 @@
-import { GroupRole, MarketStatus, PositionSide, PositionStatus } from "@prisma/client";
+import { GroupRole, MarketStatus, PositionSide, PositionStatus, Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
@@ -30,7 +30,9 @@ const createMarketSchema = z.object({
   targetUserId: z.string().min(1).nullable().optional(),
   question: z.string().min(10).max(200),
   description: z.string().max(1000).optional(),
-  closesAt: z.string().datetime(),
+  closesAt: z.string().datetime().refine((value) => new Date(value) > new Date(), {
+    message: "closesAt must be in the future"
+  }),
   resolvesAt: z.string().datetime().optional(),
   outcomes: z
     .array(z.string().trim().min(1).max(40))
@@ -54,6 +56,11 @@ const resolveMarketSchema = z.object({
 const recipientPayoutResponseSchema = z.object({
   received: z.boolean()
 });
+
+type PrismaClientOrTransaction = typeof prisma | Prisma.TransactionClient;
+type ResolutionTransactionResult =
+  | { market: SerializableMarket }
+  | { error: { status: number; message: string } };
 
 type SerializableMarket = {
   id: string;
@@ -112,6 +119,7 @@ type SerializableMarket = {
     recipient: {
       id: string;
       displayName: string;
+      venmoHandle: string | null;
     };
   }>;
   resolutionConfirmations: Array<{
@@ -164,7 +172,8 @@ const detailedMarketInclude = {
       user: {
         select: {
           id: true,
-          displayName: true
+          displayName: true,
+          venmoHandle: true
         }
       }
     }
@@ -189,26 +198,36 @@ async function findDetailedMarket(marketId: string) {
   } as never) as unknown as Promise<SerializableMarket | null>;
 }
 
-async function findDetailedMarketOrThrow(tx: typeof prisma | Omit<typeof prisma, "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends">, marketId: string) {
+async function findDetailedMarketOrThrow(tx: PrismaClientOrTransaction, marketId: string) {
   return tx.market.findUniqueOrThrow({
     where: { id: marketId },
     include: detailedMarketInclude
   } as never) as unknown as Promise<SerializableMarket>;
 }
 
-async function refreshPayoutFinalization(tx: typeof prisma | Omit<typeof prisma, "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends">, marketId: string) {
-  const payoutConfirmations = await (tx as any).marketPayoutConfirmation.findMany({
-    where: { marketId }
-  });
+async function lockMarketPayoutConfirmations(tx: PrismaClientOrTransaction, marketId: string) {
+  await tx.$queryRaw`
+    SELECT id
+    FROM "MarketPayoutConfirmation"
+    WHERE "marketId" = ${marketId}
+    FOR UPDATE
+  `;
+}
 
-  const allConfirmed =
-    payoutConfirmations.length === 0 ||
-    payoutConfirmations.every((confirmation: { status: PayoutConfirmationStatus }) => confirmation.status === PAYOUT_CONFIRMATION_STATUS.CONFIRMED);
+async function refreshPayoutFinalization(tx: PrismaClientOrTransaction, marketId: string) {
+  const pendingCount = await tx.marketPayoutConfirmation.count({
+    where: {
+      marketId,
+      status: {
+        not: PAYOUT_CONFIRMATION_STATUS.CONFIRMED
+      }
+    }
+  });
 
   await tx.market.update({
     where: { id: marketId },
     data: {
-      payoutsFinalizedAt: allConfirmed ? new Date() : null
+      payoutsFinalizedAt: pendingCount === 0 ? new Date() : null
     } as never
   } as never);
 }
@@ -218,7 +237,7 @@ function calculateRequiredResolutionConfirmations(groupMemberCount: number) {
 }
 
 async function finalizeMarketResolution(
-  tx: typeof prisma | Omit<typeof prisma, "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends">,
+  tx: PrismaClientOrTransaction,
   market: Pick<SerializableMarket, "id" | "positions" | "resolvesAt">,
   resolutionOutcomeId: string
 ) {
@@ -226,12 +245,12 @@ async function finalizeMarketResolution(
   const payouts = calculateResolutionPayouts(confirmedPositions, resolutionOutcomeId);
   const netResults = calculateNetResults(confirmedPositions, resolutionOutcomeId);
 
-  for (const [userId, netResult] of netResults.entries()) {
+  await Promise.all([...netResults.entries()].flatMap(([userId, netResult]) => {
     if (netResult === 0) {
-      continue;
+      return [];
     }
 
-    await tx.user.update({
+    return tx.user.update({
       where: { id: userId },
       data: {
         balance: {
@@ -239,7 +258,7 @@ async function finalizeMarketResolution(
         }
       }
     });
-  }
+  }));
 
   await tx.market.update({
     where: { id: market.id },
@@ -298,6 +317,7 @@ function serializeMarket(market: SerializableMarket, currentUserId: string) {
       id: confirmation.id,
       recipientUserId: confirmation.recipientUserId,
       displayName: confirmation.recipient.displayName,
+      venmoHandle: confirmation.recipient.venmoHandle,
       amount: confirmation.amount,
       status: confirmation.status,
       creatorMarkedAt: confirmation.creatorMarkedAt,
@@ -578,6 +598,19 @@ marketsRouter.post("/:marketId/positions/:positionId/confirm", asyncHandler(asyn
     return res.status(403).json({ message: "Only the market creator can confirm payments." });
   }
 
+  const membership = await prisma.groupMembership.findUnique({
+    where: {
+      userId_groupId: {
+        userId: currentUser.id,
+        groupId: market.groupId
+      }
+    }
+  });
+
+  if (!membership) {
+    return res.status(403).json({ message: "You are not part of this family group." });
+  }
+
   const position = market.positions.find((entry) => entry.id === positionId);
 
   if (!position || position.status !== PositionStatus.PENDING) {
@@ -748,28 +781,63 @@ marketsRouter.post("/:marketId/resolution/confirm", asyncHandler(async (req, res
     return res.status(400).json({ message: "You have already confirmed this resolution." });
   }
 
-  const proposedResolutionOutcomeId = market.resolutionOutcomeId;
+  const resolutionResult = await prisma.$transaction(async (tx): Promise<ResolutionTransactionResult> => {
+    const transactionalMarket = await findDetailedMarketOrThrow(tx, marketId);
 
-  const updatedMarket = await prisma.$transaction(async (tx) => {
-    await (tx as any).marketResolutionConfirmation.create({
+    if (transactionalMarket.status !== MarketStatus.PENDING_RESOLUTION || !transactionalMarket.resolutionOutcomeId) {
+      return {
+        error: {
+          status: 400,
+          message: "This market is not waiting for resolution confirmations."
+        }
+      };
+    }
+
+    if (transactionalMarket.resolutionProposedByUserId === currentUser.id) {
+      return {
+        error: {
+          status: 403,
+          message: "The admin who proposed the resolution cannot confirm it."
+        }
+      };
+    }
+
+    await (tx as any).marketResolutionConfirmation.createMany({
       data: {
         marketId,
         userId: currentUser.id
-      }
+      },
+      skipDuplicates: true
     });
 
     const confirmationCount = await (tx as any).marketResolutionConfirmation.count({
       where: { marketId }
     });
 
-    const requiredResolutionConfirmations = calculateRequiredResolutionConfirmations(market.group.memberships.length);
+    const requiredResolutionConfirmations = calculateRequiredResolutionConfirmations(transactionalMarket.group.memberships.length);
 
     if (confirmationCount >= requiredResolutionConfirmations) {
-      await finalizeMarketResolution(tx, market, proposedResolutionOutcomeId);
+      await finalizeMarketResolution(tx, transactionalMarket, transactionalMarket.resolutionOutcomeId);
     }
 
-    return findDetailedMarketOrThrow(tx, marketId);
+    return {
+      market: await findDetailedMarketOrThrow(tx, marketId)
+    };
+  }, {
+    isolationLevel: Prisma.TransactionIsolationLevel.Serializable
   });
+
+  const resolutionError = "error" in resolutionResult ? resolutionResult.error : null;
+
+  if (resolutionError) {
+    return res.status(resolutionError.status).json({ message: resolutionError.message });
+  }
+
+  if (!("market" in resolutionResult)) {
+    return res.status(500).json({ message: "Resolution confirmation failed." });
+  }
+
+  const updatedMarket = resolutionResult.market;
 
   void notifyGroupMembers(updatedMarket.groupId, updatedMarket.status === MarketStatus.RESOLVED ? "market.resolved" : "market.resolution.confirmed");
   res.json(serializeMarket(updatedMarket, currentUser.id));
@@ -836,6 +904,19 @@ marketsRouter.post("/:marketId/payouts/:payoutId/sent", asyncHandler(async (req,
     return res.status(403).json({ message: "Only the market creator can mark payouts as sent." });
   }
 
+  const membership = await prisma.groupMembership.findUnique({
+    where: {
+      userId_groupId: {
+        userId: currentUser.id,
+        groupId: market.groupId
+      }
+    }
+  });
+
+  if (!membership) {
+    return res.status(403).json({ message: "You are not part of this family group." });
+  }
+
   if (market.status !== MarketStatus.RESOLVED) {
     return res.status(400).json({ message: "Only resolved markets can start payout confirmations." });
   }
@@ -847,6 +928,8 @@ marketsRouter.post("/:marketId/payouts/:payoutId/sent", asyncHandler(async (req,
   }
 
   const updatedMarket = await prisma.$transaction(async (tx) => {
+    await lockMarketPayoutConfirmations(tx, marketId);
+
     await (tx as any).marketPayoutConfirmation.update({
       where: { id: payoutId },
       data: {
@@ -858,6 +941,8 @@ marketsRouter.post("/:marketId/payouts/:payoutId/sent", asyncHandler(async (req,
     await refreshPayoutFinalization(tx, marketId);
 
     return findDetailedMarketOrThrow(tx, marketId);
+  }, {
+    isolationLevel: Prisma.TransactionIsolationLevel.Serializable
   });
 
   void notifyGroupMembers(updatedMarket.groupId, "market.payout.sent");
@@ -887,6 +972,8 @@ marketsRouter.post("/:marketId/payouts/:payoutId/respond", asyncHandler(async (r
   }
 
   const updatedMarket = await prisma.$transaction(async (tx) => {
+    await lockMarketPayoutConfirmations(tx, marketId);
+
     await (tx as any).marketPayoutConfirmation.update({
       where: { id: payoutId },
       data: {
@@ -898,6 +985,8 @@ marketsRouter.post("/:marketId/payouts/:payoutId/respond", asyncHandler(async (r
     await refreshPayoutFinalization(tx, marketId);
 
     return findDetailedMarketOrThrow(tx, marketId);
+  }, {
+    isolationLevel: Prisma.TransactionIsolationLevel.Serializable
   });
 
   void notifyGroupMembers(updatedMarket.groupId, "market.payout.responded");

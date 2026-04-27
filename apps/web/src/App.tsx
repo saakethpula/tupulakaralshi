@@ -367,10 +367,14 @@ export default function App() {
             }
 
             clearReconnectTimer();
-            socket = new WebSocket(getRealtimeWebSocketUrl(token));
+            socket = new WebSocket(getRealtimeWebSocketUrl());
 
             socket.addEventListener("open", () => {
                 reconnectDelay = SOCKET_RECONNECT_MIN_DELAY_MS;
+                socket?.send(JSON.stringify({
+                    type: "auth",
+                    token
+                }));
             });
 
             socket.addEventListener("message", (event) => {

@@ -11,4 +11,4 @@ jobs:
     steps:
       - name: Ping Render backend
         run: |
-          curl -fsS --max-time 20 "https://tupulakaralshi.onrender.com/health"
+          curl -fsS --max-time 20 "https://tupulakaralshi.onrender.com/health" || true

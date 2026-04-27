@@ -132,15 +132,14 @@ export function calculateResolutionPayouts(
     };
   });
 
-  let distributed = rawShares.reduce((total, share) => total + share.payout, 0);
-  const remainderPool = totalPot - distributed;
+  const distributed = rawShares.reduce((total, share) => total + share.payout, 0);
+  const remainderPool = Math.max(0, totalPot - distributed);
 
   rawShares
     .sort((left, right) => right.remainder - left.remainder)
     .forEach((share, index) => {
       const bonus = index < remainderPool ? 1 : 0;
       payouts.set(share.userId, (payouts.get(share.userId) ?? 0) + share.payout + bonus);
-      distributed += bonus;
     });
 
   return payouts;

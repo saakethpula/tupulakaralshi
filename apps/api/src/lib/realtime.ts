@@ -17,6 +17,8 @@ type ClientConnection = {
   socket: {
     readyState: number;
     send(data: string): void;
+    close(code?: number, reason?: string): void;
+    on(event: string, listener: (...args: any[]) => void): void;
   };
   userId: string;
 };
@@ -112,7 +114,7 @@ async function runMiddleware(
   });
 }
 
-async function authenticateWebSocketRequest(incomingMessage: IncomingMessage) {
+async function authenticateWebSocketRequest(incomingMessage: IncomingMessage, token: string) {
   const host = incomingMessage.headers.host ?? "localhost";
   const requestUrl = new URL(incomingMessage.url ?? "/ws", `http://${host}`);
   const request = incomingMessage as Request;
@@ -120,13 +122,17 @@ async function authenticateWebSocketRequest(incomingMessage: IncomingMessage) {
 
   mutableRequest.query = Object.fromEntries(requestUrl.searchParams.entries());
   mutableRequest.body = {};
+  mutableRequest.headers = {
+    ...incomingMessage.headers,
+    authorization: `Bearer ${token}`
+  };
   mutableRequest.method = incomingMessage.method ?? "GET";
   mutableRequest.url = incomingMessage.url ?? "/ws";
   mutableRequest.originalUrl = incomingMessage.url ?? "/ws";
   mutableRequest.protocol = "https";
   mutableRequest.app = { get: () => undefined } as unknown as Request["app"];
   mutableRequest.get = (headerName: string) => {
-    const headerValue = incomingMessage.headers[headerName.toLowerCase()];
+    const headerValue = mutableRequest.headers[headerName.toLowerCase()];
 
     if (Array.isArray(headerValue)) {
       return headerValue.join(", ");
@@ -142,6 +148,33 @@ async function authenticateWebSocketRequest(incomingMessage: IncomingMessage) {
   await runMiddleware(request, response, attachCurrentUser);
 
   return request.currentUser as User | undefined;
+}
+
+function parseAuthMessage(payload: unknown) {
+  if (typeof payload !== "string") {
+    return null;
+  }
+
+  try {
+    const message = JSON.parse(payload) as { type?: unknown; token?: unknown };
+
+    if (message.type === "auth" && typeof message.token === "string" && message.token.length > 0) {
+      return message.token;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function sendConnectedMessage(socket: ClientConnection["socket"]) {
+  socket.send(JSON.stringify({
+    type: "workspace.invalidate",
+    at: new Date().toISOString(),
+    reason: "socket.connected",
+    groupIds: []
+  } satisfies WorkspaceInvalidateMessage));
 }
 
 async function resolveGroupMemberUserIds(groupIds: string[]) {
@@ -177,38 +210,59 @@ export function initializeRealtimeServer(server: HttpServer) {
       return;
     }
 
-    try {
-      const currentUser = await authenticateWebSocketRequest(request);
-
-      if (!currentUser) {
+    let authenticated = false;
+    const authTimeout = setTimeout(() => {
+      if (!authenticated) {
         socket.close(1008, "Unauthorized.");
+      }
+    }, 5000);
+    socket.on("close", () => {
+      clearTimeout(authTimeout);
+    });
+
+    socket.on("message", async (payload: unknown) => {
+      if (authenticated) {
         return;
       }
 
-      const connection: ClientConnection = {
-        socket,
-        userId: currentUser.id
-      };
+      try {
+        const token = parseAuthMessage(payload);
 
-      registerConnection(connection);
-      socket.send(JSON.stringify({
-        type: "workspace.invalidate",
-        at: new Date().toISOString(),
-        reason: "socket.connected",
-        groupIds: []
-      } satisfies WorkspaceInvalidateMessage));
+        if (!token) {
+          socket.close(1008, "Unauthorized.");
+          return;
+        }
 
-      socket.on("close", () => {
-        unregisterConnection(connection);
-      });
+        const currentUser = await authenticateWebSocketRequest(request, token);
 
-      socket.on("error", () => {
-        unregisterConnection(connection);
-      });
-    } catch (error) {
-      console.error("Failed to authenticate WebSocket connection.", error);
-      socket.close(1008, "Unauthorized.");
-    }
+        if (!currentUser) {
+          socket.close(1008, "Unauthorized.");
+          return;
+        }
+
+        authenticated = true;
+        clearTimeout(authTimeout);
+
+        const connection: ClientConnection = {
+          socket,
+          userId: currentUser.id
+        };
+
+        registerConnection(connection);
+        sendConnectedMessage(socket);
+
+        socket.on("close", () => {
+          unregisterConnection(connection);
+        });
+
+        socket.on("error", () => {
+          unregisterConnection(connection);
+        });
+      } catch (error) {
+        console.error("Failed to authenticate WebSocket connection.", error);
+        socket.close(1008, "Unauthorized.");
+      }
+    });
   });
 
   return webSocketServer;
